@@ -9,7 +9,7 @@ export function CodeBlock({ label, langClass, code }: CodeBlockData) {
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(code.trim());
     } catch {
       // clipboard unavailable — nothing to recover into, button just won't confirm
     }
