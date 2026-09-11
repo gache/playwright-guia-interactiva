@@ -62,17 +62,21 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
   return (
     <nav id="sidebar" className={[mobileOpen ? 'mobile-open' : '', collapsed ? 'collapsed' : ''].filter(Boolean).join(' ')}>
       <div className="nav-logo">
-        <div className="mark">Playwright</div>
-        {!collapsed && <div className="sub">Guía de Estudio · ruta guiada + {sections.length} lecciones</div>}
+        {!collapsed && (
+          <div className="nav-logo-text">
+            <div className="mark">Playwright</div>
+            <div className="sub">Guía de Estudio · ruta guiada + {sections.length} lecciones</div>
+          </div>
+        )}
+        <button
+          className="sidebar-collapse-btn"
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+          title={collapsed ? 'Expandir' : 'Colapsar'}
+        >
+          {collapsed ? '›' : '‹'}
+        </button>
       </div>
-      <button
-        className="sidebar-collapse-btn"
-        onClick={onToggleCollapse}
-        aria-label={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
-        title={collapsed ? 'Expandir' : 'Colapsar'}
-      >
-        {collapsed ? '›' : '‹'}
-      </button>
 
       {!collapsed && (
         <>
