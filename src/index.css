@@ -107,14 +107,92 @@
   main { flex: 1; min-width: 0; padding: 52px 60px 80px; }
 
   /* ── PAGE HEADER ── */
-  .page-head { margin-bottom: 52px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
-  .page-head h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.7px; line-height: 1.2; }
-  .page-head h1 em { font-style: normal; color: var(--green); }
-  .page-head p { margin-top: 10px; font-size: 13.5px; color: var(--text-dim); max-width: 580px; line-height: 1.7; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-  .chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border);
-    color: var(--text-dim); }
-  .chip.g { border-color: rgba(61,214,140,.3); color: var(--green); background: var(--green-bg); }
+  .page-head {
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .page-head-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid rgba(61,214,140,.3);
+    background: var(--green-bg);
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 18px;
+  }
+  .page-head h1 {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -1.2px;
+    line-height: 1.1;
+    margin-bottom: 14px;
+  }
+  .page-head h1 em {
+    font-style: normal;
+    color: var(--green);
+    text-shadow: 0 0 40px rgba(61,214,140,.25);
+  }
+  .page-head-sub {
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--text-dim);
+    letter-spacing: -0.5px;
+  }
+  .page-head p {
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 560px;
+    line-height: 1.75;
+    margin-bottom: 20px;
+  }
+  .page-stats {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 24px;
+    width: fit-content;
+  }
+  .page-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 20px;
+  }
+  .page-stat-n {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--green);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1;
+  }
+  .page-stat-l {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .page-stat-div {
+    width: 1px;
+    height: 32px;
+    background: var(--border);
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip { font-size: 11.5px; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
+    color: var(--text-dim); background: var(--surface); }
+  .chip.g { border-color: rgba(61,214,140,.25); color: var(--green); background: var(--green-bg); }
 
   /* ── DIFFICULTY FILTER BAR ── */
   .diff-filter-bar {

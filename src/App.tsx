@@ -79,22 +79,33 @@ export default function App() {
       />
       <main>
         <header className="page-head">
+          <div className="page-head-badge">Guía de Estudio Interactiva</div>
           <h1>
-            <em>Playwright</em> — Guía de Estudio Interactiva
+            Domina <em>Playwright</em><br />
+            <span className="page-head-sub">con TypeScript desde cero</span>
           </h1>
           <p>
-            31 secciones con ejemplos comentados en español, bancos de ejercicios prácticos y teóricos, errores
-            comunes y un mini proyecto completo para conectar todo.
+            Todo lo que necesitas para aprender Playwright en español: ejemplos comentados,
+            quizzes, glosario, ejercicios prácticos con soluciones y un mini proyecto completo.
           </p>
+          <div className="page-stats">
+            <div className="page-stat"><span className="page-stat-n">31</span><span className="page-stat-l">secciones</span></div>
+            <div className="page-stat-div" />
+            <div className="page-stat"><span className="page-stat-n">29</span><span className="page-stat-l">quizzes</span></div>
+            <div className="page-stat-div" />
+            <div className="page-stat"><span className="page-stat-n">66</span><span className="page-stat-l">ejercicios</span></div>
+            <div className="page-stat-div" />
+            <div className="page-stat"><span className="page-stat-n">3</span><span className="page-stat-l">niveles</span></div>
+          </div>
           <div className="chips">
             <span className="chip g">🗺️ Ruta guiada</span>
             <span className="chip g">🧠 Quiz por sección</span>
             <span className="chip g">📖 Glosario</span>
-            <span className="chip g">✓ Ejercicios con soluciones</span>
-            <span className="chip g">✓ Errores comunes</span>
-            <span className="chip g">✓ Mini proyecto completo</span>
+            <span className="chip g">🏋️ Ejercicios con soluciones</span>
+            <span className="chip g">⚠️ Errores comunes</span>
+            <span className="chip g">🚀 Mini proyecto</span>
             <span className="chip">TypeScript</span>
-            <span className="chip">31 secciones</span>
+            <span className="chip">ES2024</span>
           </div>
         </header>
 
