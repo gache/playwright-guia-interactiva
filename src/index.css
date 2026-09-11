@@ -104,7 +104,7 @@
   nav a.hidden-link { display: none; }
 
   /* ── MAIN ── */
-  main { flex: 1; min-width: 0; padding: 52px 60px 80px; max-width: 960px; }
+  main { flex: 1; min-width: 0; padding: 52px 60px 80px; }
 
   /* ── PAGE HEADER ── */
   .page-head { margin-bottom: 52px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
@@ -155,6 +155,9 @@
     margin-bottom: 0;
     user-select: none;
   }
+  summary { list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::marker { display: none; }
   .sec-head::-webkit-details-marker { display: none; }
   .sec-head::marker { display: none; }
   .section.meta .sec-head { padding: 12px 16px; align-items: center; }
