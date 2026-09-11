@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { SectionView } from './components/Section';
 import { Roadmap } from './components/Roadmap';
@@ -18,16 +18,25 @@ export default function App() {
   const sectionIds = useMemo(() => ['ruta', 'glosario', ...sections.map(s => s.id)], []);
   const activeId = useActiveSection(sectionIds);
   const quizAnsweredCount = Object.keys(quizAnswers).filter(id => /^s\d+$/.test(id)).length;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
       <div id="progress" style={{ width: `${scrollPct}%` }} />
+      <button
+        className={`hamburger${sidebarOpen ? ' open' : ''}`}
+        onClick={() => setSidebarOpen(o => !o)}
+        aria-label="Toggle menu"
+      >☰</button>
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       <Sidebar
         sections={sections}
         activeId={activeId}
         visited={visited}
         quizAnsweredCount={quizAnsweredCount}
         quizTotal={QUIZ_TOTAL}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
       />
       <main>
         <header className="page-head">

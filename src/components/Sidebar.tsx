@@ -13,9 +13,11 @@ interface SidebarProps {
   visited: string[];
   quizAnsweredCount: number;
   quizTotal: number;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTotal }: SidebarProps) {
+export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTotal, mobileOpen, onMobileClose }: SidebarProps) {
   const [query, setQuery] = useState('');
   const q = query.toLowerCase().trim();
 
@@ -37,7 +39,7 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
   const quizPct = quizTotal > 0 ? (quizAnsweredCount / quizTotal) * 100 : 0;
 
   return (
-    <nav id="sidebar">
+    <nav id="sidebar" className={mobileOpen ? 'mobile-open' : ''}>
       <div className="nav-logo">
         <div className="mark">Playwright</div>
         <div className="sub">Guía de Estudio · ruta guiada + {sections.length} lecciones</div>
@@ -86,10 +88,10 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
       </div>
 
       <div className="nav-group">Antes de Empezar</div>
-      <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''} onClick={() => { const el = document.getElementById('ruta') as HTMLDetailsElement | null; if (el) el.open = true; }}>
+      <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''} onClick={() => { const el = document.getElementById('ruta') as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
         <span className="n">🗺️</span> Ruta de Aprendizaje<span className="nav-check">✓</span>
       </a>
-      <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => { const el = document.getElementById('glosario') as HTMLDetailsElement | null; if (el) el.open = true; }}>
+      <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => { const el = document.getElementById('glosario') as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
         <span className="n">📖</span> Glosario<span className="nav-check">✓</span>
       </a>
 
@@ -107,7 +109,7 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
                 .filter(Boolean)
                 .join(' ');
               return (
-                <a key={s.id} href={`#${s.id}`} className={classes} onClick={() => { const el = document.getElementById(s.id) as HTMLDetailsElement | null; if (el) el.open = true; }}>
+                <a key={s.id} href={`#${s.id}`} className={classes} onClick={() => { const el = document.getElementById(s.id) as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
                   <span className="n">{s.num}</span>
                   {s.difficulty && <span className={`diff-dot diff-${DIFF_SUFFIX[s.difficulty]}`} />}
                   {' '}
