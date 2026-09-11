@@ -668,7 +668,6 @@ export const sections: Section[] = [
     "num": "17",
     "group": "Avanzado",
     "title": "Interceptar y Mockear Peticiones de Red",
-    "tag": "Nuevo",
     "difficulty": "advanced",
     "description": "Con <code>page.route()</code> interceptas cualquier petición que haga la página antes de que llegue al servidor, y decides qué responder. Sirve para simular errores del backend, acelerar tests bloqueando recursos innecesarios, o probar la UI sin depender de un servidor real.",
     "blocks": [
@@ -1046,7 +1045,6 @@ export const sections: Section[] = [
     "num": "25",
     "group": "Avanzado",
     "title": "Page Object Model (POM)",
-    "tag": "Nuevo",
     "difficulty": "advanced",
     "description": "Un <strong>Page Object</strong> es una clase que agrupa los locators y las acciones de una página (o componente) en un solo lugar. En vez de escribir <code>page.getByLabel('Email').fill(...)</code> en cada test, el test llama a un método con nombre de negocio como <code>loginPage.login(usuario, clave)</code>.",
     "blocks": [
@@ -1123,7 +1121,6 @@ export const sections: Section[] = [
     "num": "26",
     "group": "Avanzado",
     "title": "Fixtures Personalizados",
-    "tag": "Nuevo",
     "difficulty": "advanced",
     "description": "Un <strong>fixture</strong> personalizado te deja inyectar algo directamente en la firma del test — como un Page Object ya instanciado y con login hecho — sin repetir <code>new LoginPage(page)</code> ni <code>beforeEach</code> en cada archivo. Es la forma en que se organizan los frameworks de Playwright en proyectos reales.",
     "blocks": [
@@ -1200,7 +1197,6 @@ export const sections: Section[] = [
     "num": "27",
     "group": "Práctica",
     "title": "Mini Proyecto Completo",
-    "tag": "Nuevo",
     "difficulty": "advanced",
     "description": "Un test suite real que conecta todo lo aprendido: setup de sesión, flujo de login, CRUD de tareas y verificación de estado. Usa <a href=\"https://todomvc.com/examples/react/dist/\" style=\"color:var(--cyan)\" target=\"_blank\">TodoMVC React</a> como app de práctica.",
     "blocks": [
@@ -1279,7 +1275,6 @@ export const sections: Section[] = [
     "num": "28",
     "group": "Práctica",
     "title": "Errores Frecuentes y Cómo Solucionarlos",
-    "tag": "Nuevo",
     "difficulty": "intermediate",
     "description": "Los errores más comunes al aprender Playwright, con el código problemático y la corrección explicada.",
     "blocks": [
@@ -1406,7 +1401,6 @@ export const sections: Section[] = [
     "num": "29",
     "group": "Práctica",
     "title": "Preguntas Frecuentes de Entrevista",
-    "tag": "Nuevo",
     "difficulty": "intermediate",
     "description": "Preguntas típicas en una entrevista técnica sobre Playwright, con la respuesta corta que ya deberías poder dar después de esta guía.",
     "blocks": [
@@ -1451,7 +1445,6 @@ export const sections: Section[] = [
     "num": "30",
     "group": "Práctica",
     "title": "Banco de Ejercicios Prácticos",
-    "tag": "Nuevo",
     "difficulty": "intermediate",
     "description": "Ocho ejercicios de código independientes que cubren temas de toda la guía — muchos de ellos no tienen un ejercicio propio dentro de su sección. Intenta resolver cada uno antes de abrir la solución.",
     "blocks": [
@@ -1548,7 +1541,6 @@ export const sections: Section[] = [
     "num": "31",
     "group": "Práctica",
     "title": "Banco de Ejercicios Teóricos",
-    "tag": "Nuevo",
     "difficulty": "intermediate",
     "description": "Ocho preguntas de opción múltiple sobre conceptos que no se cubrieron en el quiz de ninguna sección — el mismo formato de autoevaluación, pero agrupado como un repaso independiente.",
     "blocks": [

@@ -244,7 +244,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    align-items: start;
+    align-items: stretch;
     margin-bottom: 48px;
   }
 
@@ -257,7 +257,11 @@
     scroll-margin-top: 28px;
     overflow: hidden;
     transition: border-color .15s;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
+  .section > .sec-head { flex-shrink: 0; }
   .section:not(.meta):hover { border-color: var(--border2); }
   .sections-grid .section[open] {
     grid-column: 1 / -1;
