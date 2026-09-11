@@ -4,6 +4,7 @@ import { CodeBlock } from './CodeBlock';
 import { Compare } from './Compare';
 import { Exercise } from './Exercise';
 import { Quiz } from './Quiz';
+import { Shortcuts } from './Shortcuts';
 
 const DIFF_LABEL: Record<NonNullable<Section['difficulty']>, string> = {
   beginner: '🟢 Principiante',
@@ -81,6 +82,8 @@ function BlockView({
           onAnswer={onAnswer}
         />
       );
+    case 'shortcuts':
+      return <Shortcuts items={block.items} />;
     case 'raw':
       return <div dangerouslySetInnerHTML={{ __html: block.html }} />;
   }

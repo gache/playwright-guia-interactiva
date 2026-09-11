@@ -47,7 +47,24 @@ export interface RawBlock {
   html: string;
 }
 
-export type Block = CalloutBlock | CodeBlockBlock | CompareBlock | ExerciseBlock | QuizBlock | RawBlock;
+export interface ShortcutItem {
+  keys: string;
+  description: string;
+}
+
+export interface ShortcutsBlock {
+  type: 'shortcuts';
+  items: ShortcutItem[];
+}
+
+export type Block =
+  | CalloutBlock
+  | CodeBlockBlock
+  | CompareBlock
+  | ExerciseBlock
+  | QuizBlock
+  | ShortcutsBlock
+  | RawBlock;
 
 export interface Section {
   id: string;

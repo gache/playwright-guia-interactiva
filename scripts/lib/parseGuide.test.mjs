@@ -68,6 +68,10 @@ const FIXTURE = `
         </div>
         <p class="quiz-explain" hidden>Ese es el comando oficial.</p>
       </div>
+      <div class="shortcuts">
+        <div class="sc"><kbd>--ui</kbd><span class="sc-desc">Interfaz visual</span></div>
+        <div class="sc"><kbd>--debug</kbd><span class="sc-desc">Debug paso a paso</span></div>
+      </div>
     </div>
   </details>
 </main>
@@ -99,8 +103,8 @@ describe('parseGuideDocument', () => {
     expect(s1.description).toBe('Cómo instalar <code>Playwright</code>.');
   });
 
-  it('extracts callout, code, compare, exercise, and quiz blocks in order', () => {
-    const [callout, code, compare, exercise, quiz] = result.sections[0].blocks;
+  it('extracts callout, code, compare, exercise, quiz, and shortcuts blocks in order', () => {
+    const [callout, code, compare, exercise, quiz, shortcuts] = result.sections[0].blocks;
     expect(callout).toEqual({ type: 'callout', variant: 'info', icon: '📋', html: 'Necesitas <strong>Node.js</strong>.' });
     expect(code).toEqual({ type: 'code', block: { label: 'terminal', langClass: 'sh', code: "npm init playwright@latest" } });
     expect(compare).toEqual({
@@ -123,6 +127,13 @@ describe('parseGuideDocument', () => {
       options: ['npm i', 'npm init playwright@latest'],
       answerIndex: 1,
       explanationHtml: 'Ese es el comando oficial.',
+    });
+    expect(shortcuts).toEqual({
+      type: 'shortcuts',
+      items: [
+        { keys: '--ui', description: 'Interfaz visual' },
+        { keys: '--debug', description: 'Debug paso a paso' },
+      ],
     });
   });
 });

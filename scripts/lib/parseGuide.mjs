@@ -78,6 +78,14 @@ function parseCompareEl(compareEl, precedingLabel) {
   };
 }
 
+function parseShortcutsEl(shortcutsEl) {
+  const items = [...shortcutsEl.querySelectorAll(':scope > .sc')].map(scEl => ({
+    keys: text(scEl.querySelector('kbd')),
+    description: text(scEl.querySelector('.sc-desc')),
+  }));
+  return { type: 'shortcuts', items };
+}
+
 function parseCalloutEl(callEl) {
   const variant = [...callEl.classList].find(c => c !== 'call');
   const iconEl = callEl.querySelector('.call-icon');
@@ -108,6 +116,8 @@ function parseSectionBody(bodyEl, warn) {
       blocks.push(parseExerciseEl(child));
     } else if (child.matches('div.quiz')) {
       blocks.push(parseQuizEl(child));
+    } else if (child.matches('div.shortcuts')) {
+      blocks.push(parseShortcutsEl(child));
     } else if (child.tagName === 'P' && !child.classList.contains('desc')) {
       pendingLabel = text(child);
     } else if (child.tagName === 'HR') {
