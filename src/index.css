@@ -288,7 +288,10 @@
     list-style: none;
     -webkit-appearance: none;
     appearance: none;
+    min-height: 96px;
   }
+  .section.meta .sec-head,
+  .sections-grid .section[open] > .sec-head { min-height: unset; }
   details > summary {
     list-style: none;
     -webkit-appearance: none;
