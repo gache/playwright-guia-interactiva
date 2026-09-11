@@ -46,9 +46,7 @@ function parseQuizEl(quizEl) {
     return innerHtml(spans[1]);
   });
   const questionEl = quizEl.querySelector('.quiz-q');
-  const questionHtml = innerHtml(questionEl)
-    .replace(/^<span class="quiz-icon">.*?<\/span>\s*/, '')
-    .replace(/^<strong>.*?<\/strong>\s*—\s*/, '');
+  const questionHtml = innerHtml(questionEl).replace(/^<span class="quiz-icon">.*?<\/span>\s*/, '');
   return {
     type: 'quiz',
     id,

@@ -119,7 +119,7 @@ describe('parseGuideDocument', () => {
       type: 'quiz',
       id: 's1',
       isTeo: false,
-      questionHtml: '¿Qué comando instala Playwright?',
+      questionHtml: '<strong>Autoevaluación</strong> — ¿Qué comando instala Playwright?',
       options: ['npm i', 'npm init playwright@latest'],
       answerIndex: 1,
       explanationHtml: 'Ese es el comando oficial.',
