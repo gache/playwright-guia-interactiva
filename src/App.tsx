@@ -12,10 +12,15 @@ import { glossaryTerms } from './data/glossary';
 
 const QUIZ_TOTAL = 29;
 
+const DIFF_ORDER: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
+const sortedSections = [...sections].sort(
+  (a, b) => (DIFF_ORDER[a.difficulty ?? 'intermediate'] ?? 1) - (DIFF_ORDER[b.difficulty ?? 'intermediate'] ?? 1),
+);
+
 export default function App() {
   const { visited, quizAnswers, markVisited, recordAnswer } = useProgress();
   const scrollPct = useScrollProgress();
-  const sectionIds = useMemo(() => ['ruta', 'glosario', ...sections.map(s => s.id)], []);
+  const sectionIds = useMemo(() => ['ruta', 'glosario', ...sortedSections.map(s => s.id)], []);
   const activeId = useActiveSection(sectionIds);
   const quizAnsweredCount = Object.keys(quizAnswers).filter(id => /^s\d+$/.test(id)).length;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,7 +35,7 @@ export default function App() {
       >☰</button>
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       <Sidebar
-        sections={sections}
+        sections={sortedSections}
         activeId={activeId}
         visited={visited}
         quizAnsweredCount={quizAnsweredCount}
@@ -79,7 +84,7 @@ export default function App() {
           </div>
         </details>
 
-        {sections.map(s => (
+        {sortedSections.map(s => (
           <SectionView key={s.id} data={s} quizAnswers={quizAnswers} onToggleOpen={markVisited} onAnswer={recordAnswer} />
         ))}
       </main>
