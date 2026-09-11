@@ -141,8 +141,12 @@
     border-color: var(--border2);
   }
   .section.meta {
-    margin-bottom: 12px;
-    border-radius: 10px;
+    margin-bottom: 0;
+    border-radius: 12px;
+  }
+  .sections-grid .section.meta.open {
+    grid-column: 1 / -1;
+    border-color: var(--border2);
   }
 
   /* summary / card header */

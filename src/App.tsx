@@ -86,18 +86,20 @@ export default function App() {
           </div>
         </header>
 
-        <MetaSection id="ruta" icon="🗺️" title="Ruta de Aprendizaje">
-          <Roadmap stages={roadmapStages} />
-        </MetaSection>
+        <div className="sections-grid">
+          <MetaSection id="ruta" icon="🗺️" title="Ruta de Aprendizaje">
+            <Roadmap stages={roadmapStages} />
+          </MetaSection>
 
-        <MetaSection id="glosario" icon="📖" title="Glosario">
-          <Glossary terms={glossaryTerms} />
-        </MetaSection>
+          <MetaSection id="glosario" icon="📖" title="Glosario">
+            <Glossary terms={glossaryTerms} />
+          </MetaSection>
 
-        <MetaSection id="ejercicios" icon="🏋️" title="Ejercicios Prácticos"
-          badge={<span className="sec-tag">{exercises.length} ejercicios</span>}>
-          <Exercises exercises={exercises} />
-        </MetaSection>
+          <MetaSection id="ejercicios" icon="🏋️" title="Ejercicios Prácticos"
+            badge={<span className="sec-tag">{exercises.length} ejercicios</span>}>
+            <Exercises exercises={exercises} />
+          </MetaSection>
+        </div>
 
         <div className="sections-grid">
           {sortedSections.map(s => (
