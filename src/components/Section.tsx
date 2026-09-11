@@ -28,8 +28,9 @@ interface SectionProps {
 export function SectionView({ data, isVisited, quizAnswers, onComplete, onAnswer }: SectionProps) {
   const previewText = data.description.replace(/<[^>]*>/g, '').slice(0, 130).trim();
 
+  const diffClass = data.difficulty ? ` diff-${DIFF_SUFFIX[data.difficulty]}` : '';
   return (
-    <details className="section" id={data.id}>
+    <details className={`section${diffClass}`} id={data.id}>
       <summary className="sec-head">
         <span className="sec-num">{data.num}</span>
         <div className="sec-head-content">
