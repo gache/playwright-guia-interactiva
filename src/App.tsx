@@ -97,9 +97,11 @@ export default function App() {
           </div>
         </details>
 
-        {sortedSections.map(s => (
-          <SectionView key={s.id} data={s} quizAnswers={quizAnswers} onToggleOpen={markVisited} onAnswer={recordAnswer} />
-        ))}
+        <div className="sections-grid">
+          {sortedSections.map(s => (
+            <SectionView key={s.id} data={s} quizAnswers={quizAnswers} onToggleOpen={markVisited} onAnswer={recordAnswer} />
+          ))}
+        </div>
       </main>
     </>
   );

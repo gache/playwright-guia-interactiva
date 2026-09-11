@@ -25,6 +25,8 @@ interface SectionProps {
 }
 
 export function SectionView({ data, quizAnswers, onToggleOpen, onAnswer }: SectionProps) {
+  const previewText = data.description.replace(/<[^>]*>/g, '').slice(0, 130).trim();
+
   return (
     <details
       className="section"
@@ -35,12 +37,18 @@ export function SectionView({ data, quizAnswers, onToggleOpen, onAnswer }: Secti
     >
       <summary className="sec-head">
         <span className="sec-num">{data.num}</span>
-        <h2 className="sec-title">
-          {data.title} {data.tag && <span className="sec-tag new">{data.tag}</span>}
-        </h2>
-        {data.difficulty && (
-          <span className={`diff-badge diff-${DIFF_SUFFIX[data.difficulty]}`}>{DIFF_LABEL[data.difficulty]}</span>
-        )}
+        <div className="sec-head-content">
+          <div className="sec-title-row">
+            <h2 className="sec-title">
+              {data.title}{data.tag && <span className="sec-tag new">{data.tag}</span>}
+            </h2>
+            {data.difficulty && (
+              <span className={`diff-badge diff-${DIFF_SUFFIX[data.difficulty]}`}>{DIFF_LABEL[data.difficulty]}</span>
+            )}
+          </div>
+          {previewText && <p className="sec-preview">{previewText}</p>}
+        </div>
+        <span className="sec-chevron">▶</span>
       </summary>
       <div className="sec-body">
         <p className="desc" dangerouslySetInnerHTML={{ __html: data.description }} />
