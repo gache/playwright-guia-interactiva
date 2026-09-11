@@ -11,7 +11,8 @@ describe('Exercise', () => {
         solution={{ label: 'Solución', langClass: 'ts', code: "await page.getByLabel('Nombre').fill('Ana');" }}
       />,
     );
-    expect(screen.getByText('Ejercicio 1 (Acciones) — Formulario de registro')).toBeInTheDocument();
+    // outer exercise <details> starts collapsed — open it first, matching source guide behavior
+    fireEvent.click(screen.getByText('Ejercicio 1 (Acciones) — Formulario de registro'));
     expect(screen.queryByText(/getByLabel/)).not.toBeVisible();
     fireEvent.click(screen.getByText('Ver solución'));
     expect(screen.getByText(/getByLabel/)).toBeVisible();

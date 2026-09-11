@@ -9,7 +9,7 @@ interface ExerciseProps {
 
 export function Exercise({ title, taskHtml, solution }: ExerciseProps) {
   return (
-    <details className="exercise" open>
+    <details className="exercise">
       <summary>{title}</summary>
       <div className="ex-body">
         <p className="ex-task" dangerouslySetInnerHTML={{ __html: taskHtml }} />
