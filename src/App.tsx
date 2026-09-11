@@ -20,6 +20,14 @@ const sortedSections = [...sections].sort(
   (a, b) => (DIFF_ORDER[a.difficulty ?? 'intermediate'] ?? 1) - (DIFF_ORDER[b.difficulty ?? 'intermediate'] ?? 1),
 );
 
+type Difficulty = 'all' | 'beginner' | 'intermediate' | 'advanced';
+const DIFF_FILTERS: { key: Difficulty; label: string; count: number }[] = [
+  { key: 'all', label: 'Todos', count: sortedSections.length },
+  { key: 'beginner', label: '🟢 Principiante', count: sortedSections.filter(s => s.difficulty === 'beginner').length },
+  { key: 'intermediate', label: '🟡 Intermedio', count: sortedSections.filter(s => s.difficulty === 'intermediate').length },
+  { key: 'advanced', label: '🟠 Avanzado', count: sortedSections.filter(s => s.difficulty === 'advanced').length },
+];
+
 function MetaSection({ id, icon, title, badge, children }: {
   id: string; icon: string; title: string;
   badge?: React.ReactNode; children: React.ReactNode;
@@ -46,6 +54,10 @@ export default function App() {
   const activeId = useActiveSection(sectionIds);
   const quizAnsweredCount = Object.keys(quizAnswers).filter(id => /^s\d+$/.test(id)).length;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [diffFilter, setDiffFilter] = useState<Difficulty>('all');
+  const visibleSections = diffFilter === 'all'
+    ? sortedSections
+    : sortedSections.filter(s => s.difficulty === diffFilter);
 
   return (
     <>
@@ -101,8 +113,20 @@ export default function App() {
           </MetaSection>
         </div>
 
+        <div className="diff-filter-bar">
+          {DIFF_FILTERS.map(f => (
+            <button
+              key={f.key}
+              className={`diff-filter-btn${diffFilter === f.key ? ' active' : ''}${f.key !== 'all' ? ` diff-filter-${f.key}` : ''}`}
+              onClick={() => setDiffFilter(f.key)}
+            >
+              {f.label} <span className="diff-filter-count">{f.count}</span>
+            </button>
+          ))}
+        </div>
+
         <div className="sections-grid">
-          {sortedSections.map(s => (
+          {visibleSections.map(s => (
             <SectionView key={s.id} data={s} quizAnswers={quizAnswers} onToggleOpen={markVisited} onAnswer={recordAnswer} />
           ))}
         </div>

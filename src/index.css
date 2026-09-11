@@ -116,6 +116,42 @@
     color: var(--text-dim); }
   .chip.g { border-color: rgba(61,214,140,.3); color: var(--green); background: var(--green-bg); }
 
+  /* ── DIFFICULTY FILTER BAR ── */
+  .diff-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .diff-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+  }
+  .diff-filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .diff-filter-btn.active { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+  .diff-filter-btn.diff-filter-beginner.active { border-color: #3DD68C; background: rgba(61,214,140,.08); color: #3DD68C; }
+  .diff-filter-btn.diff-filter-intermediate.active { border-color: #FDE68A; background: rgba(253,230,138,.08); color: #FDE68A; }
+  .diff-filter-btn.diff-filter-advanced.active { border-color: #FB923C; background: rgba(251,146,60,.08); color: #FB923C; }
+  .diff-filter-count {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .diff-filter-btn.active .diff-filter-count { background: transparent; color: inherit; opacity: .7; }
+
   /* ── SECTIONS GRID ── */
   .sections-grid {
     display: grid;
