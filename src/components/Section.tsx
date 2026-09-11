@@ -19,22 +19,17 @@ const DIFF_SUFFIX: Record<NonNullable<Section['difficulty']>, string> = {
 
 interface SectionProps {
   data: Section;
+  isVisited: boolean;
   quizAnswers: Record<string, number>;
-  onToggleOpen: (id: string) => void;
+  onComplete: (id: string) => void;
   onAnswer: (id: string, index: number) => void;
 }
 
-export function SectionView({ data, quizAnswers, onToggleOpen, onAnswer }: SectionProps) {
+export function SectionView({ data, isVisited, quizAnswers, onComplete, onAnswer }: SectionProps) {
   const previewText = data.description.replace(/<[^>]*>/g, '').slice(0, 130).trim();
 
   return (
-    <details
-      className="section"
-      id={data.id}
-      onToggle={e => {
-        if ((e.target as HTMLDetailsElement).open) onToggleOpen(data.id);
-      }}
-    >
+    <details className="section" id={data.id}>
       <summary className="sec-head">
         <span className="sec-num">{data.num}</span>
         <div className="sec-head-content">
@@ -48,6 +43,7 @@ export function SectionView({ data, quizAnswers, onToggleOpen, onAnswer }: Secti
           </div>
           {previewText && <p className="sec-preview">{previewText}</p>}
         </div>
+        {isVisited && <span className="sec-done-badge">✓</span>}
         <span className="sec-chevron">▶</span>
       </summary>
       <div className="sec-body">
@@ -55,6 +51,15 @@ export function SectionView({ data, quizAnswers, onToggleOpen, onAnswer }: Secti
         {data.blocks.map((block, i) => (
           <BlockView key={i} block={block} quizAnswers={quizAnswers} onAnswer={onAnswer} />
         ))}
+        <div className="sec-complete-row">
+          {isVisited ? (
+            <span className="sec-complete-done">Sección completada</span>
+          ) : (
+            <button className="sec-complete-btn" onClick={() => onComplete(data.id)}>
+              Marcar como completada
+            </button>
+          )}
+        </div>
       </div>
     </details>
   );

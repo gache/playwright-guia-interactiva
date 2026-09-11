@@ -95,22 +95,27 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
       </div>
 
       <div className="nav-group">Antes de Empezar</div>
-      <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''} onClick={() => { const el = document.getElementById('ruta') as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
-        <span className="n">🗺️</span> Ruta de Aprendizaje<span className="nav-check">✓</span>
+      <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''} onClick={() => onMobileClose?.()}>
+        <span className="n">🗺️</span> Ruta de Aprendizaje
       </a>
-      <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => { const el = document.getElementById('glosario') as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
-        <span className="n">📖</span> Glosario<span className="nav-check">✓</span>
+      <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => onMobileClose?.()}>
+        <span className="n">📖</span> Glosario
       </a>
 
       {groups.map(([group, items]) => {
         const visibleCount = q.length > 0 ? items.filter(s => matches(s.title)).length : items.length;
         const groupHidden = q.length > 0 && visibleCount === 0;
+        const doneCount = items.filter(s => visited.includes(s.id)).length;
         if (groupHidden) return null;
         return (
           <details key={group} className="nav-section-group" open>
             <summary className="nav-group">
               {group}
-              <span className="nav-group-count">{visibleCount}</span>
+              <span className="nav-group-progress">
+                <span className="nav-group-done">{doneCount}</span>
+                <span className="nav-group-sep">/</span>
+                <span className="nav-group-total">{items.length}</span>
+              </span>
             </summary>
             {items.map(s => {
               if (!matches(s.title)) return null;
@@ -133,8 +138,8 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
       })}
 
       <div className="nav-group">Práctica</div>
-      <a href="#ejercicios" className={activeId === 'ejercicios' ? 'active' : ''} onClick={() => { const el = document.getElementById('ejercicios') as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
-        <span className="n">🏋️</span> Ejercicios Prácticos<span className="nav-check">✓</span>
+      <a href="#ejercicios" className={activeId === 'ejercicios' ? 'active' : ''} onClick={() => onMobileClose?.()}>
+        <span className="n">🏋️</span> Ejercicios Prácticos
       </a>
     </nav>
   );

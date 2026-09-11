@@ -138,7 +138,7 @@ export default function App() {
 
         <div className="sections-grid">
           {visibleSections.map(s => (
-            <SectionView key={s.id} data={s} quizAnswers={quizAnswers} onToggleOpen={markVisited} onAnswer={recordAnswer} />
+            <SectionView key={s.id} data={s} isVisited={visited.includes(s.id)} quizAnswers={quizAnswers} onComplete={markVisited} onAnswer={recordAnswer} />
           ))}
         </div>
       </main>
