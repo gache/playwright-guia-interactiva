@@ -1,3 +1,79 @@
+import { useMemo } from 'react';
+import { Sidebar } from './components/Sidebar';
+import { SectionView } from './components/Section';
+import { Roadmap } from './components/Roadmap';
+import { Glossary } from './components/Glossary';
+import { useProgress } from './hooks/useProgress';
+import { useScrollProgress } from './hooks/useScrollProgress';
+import { useActiveSection } from './hooks/useActiveSection';
+import { sections } from './data/sections';
+import { roadmapStages } from './data/roadmap';
+import { glossaryTerms } from './data/glossary';
+
+const QUIZ_TOTAL = 29;
+
 export default function App() {
-  return <div>Playwright Guide</div>;
+  const { visited, quizAnswers, markVisited, recordAnswer } = useProgress();
+  const scrollPct = useScrollProgress();
+  const sectionIds = useMemo(() => ['ruta', 'glosario', ...sections.map(s => s.id)], []);
+  const activeId = useActiveSection(sectionIds);
+  const quizAnsweredCount = Object.keys(quizAnswers).filter(id => /^s\d+$/.test(id)).length;
+
+  return (
+    <>
+      <div id="progress" style={{ width: `${scrollPct}%` }} />
+      <Sidebar
+        sections={sections}
+        activeId={activeId}
+        visited={visited}
+        quizAnsweredCount={quizAnsweredCount}
+        quizTotal={QUIZ_TOTAL}
+      />
+      <main>
+        <header className="page-head">
+          <h1>
+            <em>Playwright</em> — Guía de Estudio Interactiva
+          </h1>
+          <p>
+            31 secciones con ejemplos comentados en español, bancos de ejercicios prácticos y teóricos, errores
+            comunes y un mini proyecto completo para conectar todo.
+          </p>
+          <div className="chips">
+            <span className="chip g">🗺️ Ruta guiada</span>
+            <span className="chip g">🧠 Quiz por sección</span>
+            <span className="chip g">📖 Glosario</span>
+            <span className="chip g">✓ Ejercicios con soluciones</span>
+            <span className="chip g">✓ Errores comunes</span>
+            <span className="chip g">✓ Mini proyecto completo</span>
+            <span className="chip">TypeScript</span>
+            <span className="chip">31 secciones</span>
+          </div>
+        </header>
+
+        <details className="section meta" id="ruta">
+          <summary className="sec-head">
+            <span className="sec-num">🗺️</span>
+            <h2 className="sec-title">Ruta de Aprendizaje</h2>
+          </summary>
+          <div className="sec-body">
+            <Roadmap stages={roadmapStages} />
+          </div>
+        </details>
+
+        <details className="section meta" id="glosario">
+          <summary className="sec-head">
+            <span className="sec-num">📖</span>
+            <h2 className="sec-title">Glosario</h2>
+          </summary>
+          <div className="sec-body">
+            <Glossary terms={glossaryTerms} />
+          </div>
+        </details>
+
+        {sections.map(s => (
+          <SectionView key={s.id} data={s} quizAnswers={quizAnswers} onToggleOpen={markVisited} onAnswer={recordAnswer} />
+        ))}
+      </main>
+    </>
+  );
 }
