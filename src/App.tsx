@@ -137,8 +137,8 @@ export default function App() {
         </div>
 
         <div className="sections-grid">
-          {visibleSections.map(s => (
-            <SectionView key={s.id} data={s} isVisited={visited.includes(s.id)} quizAnswers={quizAnswers} onComplete={markVisited} onAnswer={recordAnswer} />
+          {visibleSections.map((s, i) => (
+            <SectionView key={s.id} data={s} isVisited={visited.includes(s.id)} quizAnswers={quizAnswers} onComplete={markVisited} onAnswer={recordAnswer} nextId={visibleSections[i + 1]?.id} />
           ))}
         </div>
       </main>

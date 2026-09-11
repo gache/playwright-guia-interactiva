@@ -23,9 +23,10 @@ interface SectionProps {
   quizAnswers: Record<string, number>;
   onComplete: (id: string) => void;
   onAnswer: (id: string, index: number) => void;
+  nextId?: string;
 }
 
-export function SectionView({ data, isVisited, quizAnswers, onComplete, onAnswer }: SectionProps) {
+export function SectionView({ data, isVisited, quizAnswers, onComplete, onAnswer, nextId }: SectionProps) {
   const previewText = data.description.replace(/<[^>]*>/g, '').slice(0, 130).trim();
 
   const diffClass = data.difficulty ? ` diff-${DIFF_SUFFIX[data.difficulty]}` : '';
@@ -54,7 +55,23 @@ export function SectionView({ data, isVisited, quizAnswers, onComplete, onAnswer
         ))}
         <div className="sec-complete-row">
           {isVisited ? (
-            <span className="sec-complete-done">Sección completada</span>
+            <>
+              <span className="sec-complete-done">Sección completada</span>
+              {nextId && (
+                <button
+                  className="sec-next-btn"
+                  onClick={() => {
+                    const el = document.getElementById(nextId) as HTMLDetailsElement | null;
+                    if (el) {
+                      el.open = true;
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
+                >
+                  Siguiente <span className="sec-next-arrow">→</span>
+                </button>
+              )}
+            </>
           ) : (
             <button className="sec-complete-btn" onClick={() => onComplete(data.id)}>
               Marcar como completada

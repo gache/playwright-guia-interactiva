@@ -371,7 +371,7 @@
 
   /* ── SECTION COMPLETE ── */
   .sec-complete-row {
-    display: flex; align-items: center;
+    display: flex; align-items: center; gap: 10px;
     margin-top: 20px; padding-top: 16px;
     border-top: 1px solid var(--border);
   }
@@ -398,6 +398,25 @@
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; margin-right: 2px;
   }
+
+  .sec-next-btn {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 16px; border-radius: 8px;
+    border: 1px solid var(--accent, var(--border2));
+    background: var(--accent-glow, transparent);
+    color: var(--accent, var(--text-dim));
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, box-shadow .15s, transform .15s;
+  }
+  .sec-next-btn:hover {
+    background: var(--accent-glow, rgba(42,51,71,.4));
+    box-shadow: 0 0 12px var(--accent-glow, transparent);
+    transform: translateX(2px);
+  }
+  .sec-next-arrow { font-size: 14px; transition: transform .15s; }
+  .sec-next-btn:hover .sec-next-arrow { transform: translateX(3px); }
 
   .sec-tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500;
     background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); margin-left: 2px; }
