@@ -69,6 +69,16 @@ export function Exercises({ exercises }: ExercisesProps) {
         {exercises.length} ejercicios prácticos organizados por nivel. Cada uno incluye descripción,
         pista opcional y solución con código TypeScript listo para ejecutar.
       </p>
+      <div className="ex-practice-banner">
+        <span className="ex-practice-icon">🌐</span>
+        <div>
+          <strong>Sitio de práctica recomendado:</strong>{' '}
+          <a href="https://practice.expandtesting.com/register" target="_blank" rel="noreferrer" className="ex-practice-link">
+            practice.expandtesting.com
+          </a>
+          {' '}— tiene formularios de registro/login, notas CRUD, basic-auth y más. Los ejercicios B04, I11, I17, I18, I19, A01 y A02 apuntan a este sitio directamente.
+        </div>
+      </div>
 
       <div className="ex-filters">
         <button

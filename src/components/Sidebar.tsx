@@ -101,9 +101,6 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
       <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => { const el = document.getElementById('glosario') as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
         <span className="n">📖</span> Glosario<span className="nav-check">✓</span>
       </a>
-      <a href="#ejercicios" className={activeId === 'ejercicios' ? 'active' : ''} onClick={() => { const el = document.getElementById('ejercicios') as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
-        <span className="n">🏋️</span> Ejercicios Prácticos<span className="nav-check">✓</span>
-      </a>
 
       {groups.map(([group, items]) => {
         const visibleCount = q.length > 0 ? items.filter(s => matches(s.title)).length : items.length;
@@ -134,6 +131,11 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
           </details>
         );
       })}
+
+      <div className="nav-group">Práctica</div>
+      <a href="#ejercicios" className={activeId === 'ejercicios' ? 'active' : ''} onClick={() => { const el = document.getElementById('ejercicios') as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
+        <span className="n">🏋️</span> Ejercicios Prácticos<span className="nav-check">✓</span>
+      </a>
     </nav>
   );
 }
