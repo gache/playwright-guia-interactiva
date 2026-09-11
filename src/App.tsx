@@ -15,10 +15,7 @@ import { exercises } from './data/exercises';
 
 const QUIZ_TOTAL = 29;
 
-const DIFF_ORDER: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
-const sortedSections = [...sections].sort(
-  (a, b) => (DIFF_ORDER[a.difficulty ?? 'intermediate'] ?? 1) - (DIFF_ORDER[b.difficulty ?? 'intermediate'] ?? 1),
-);
+const sortedSections = [...sections].sort((a, b) => Number(a.num) - Number(b.num));
 
 type Difficulty = 'all' | 'beginner' | 'intermediate' | 'advanced';
 const DIFF_FILTERS: { key: Difficulty; label: string; count: number }[] = [
