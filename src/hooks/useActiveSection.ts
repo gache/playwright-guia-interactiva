@@ -4,19 +4,24 @@ export function useActiveSection(ids: string[]): string | null {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) setActiveId(entry.target.id);
-        });
-      },
-      { rootMargin: '-15% 0px -65% 0px' },
-    );
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
+    function update() {
+      const threshold = window.innerHeight * 0.3;
+      let best: string | null = null;
+      let bestTop = -Infinity;
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= threshold && top > bestTop) {
+          bestTop = top;
+          best = id;
+        }
+      }
+      if (best !== null) setActiveId(best);
+    }
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
   }, [ids]);
 
   return activeId;
