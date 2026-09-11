@@ -106,14 +106,6 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
             </span>
           </div>
 
-          <div className="nav-group">Antes de Empezar</div>
-          <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''} onClick={() => onMobileClose?.()}>
-            <span className="n">🗺️</span> Ruta de Aprendizaje
-          </a>
-          <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => onMobileClose?.()}>
-            <span className="n">📖</span> Glosario
-          </a>
-
           {groups.map(([group, items]) => {
             const visibleCount = q.length > 0 ? items.filter(s => matches(s.title)).length : items.length;
             const groupHidden = q.length > 0 && visibleCount === 0;
