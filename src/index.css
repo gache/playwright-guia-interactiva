@@ -434,7 +434,8 @@
   }
 
   /* body */
-  .sec-body { padding: 18px 20px 20px; border-top: 1px solid var(--border); }
+  .sec-body { padding: 18px 20px 20px; }
+  .section.open .sec-head { border-bottom: 1px solid var(--border); }
   .section.meta .sec-body { padding: 16px 18px 22px; }
 
   /* ── SECTION COMPLETE ── */
