@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import React from 'react';
 import { Sidebar } from './components/Sidebar';
 import { SectionView } from './components/Section';
 import { Roadmap } from './components/Roadmap';
@@ -18,6 +19,25 @@ const DIFF_ORDER: Record<string, number> = { beginner: 0, intermediate: 1, advan
 const sortedSections = [...sections].sort(
   (a, b) => (DIFF_ORDER[a.difficulty ?? 'intermediate'] ?? 1) - (DIFF_ORDER[b.difficulty ?? 'intermediate'] ?? 1),
 );
+
+function MetaSection({ id, icon, title, badge, children }: {
+  id: string; icon: string; title: string;
+  badge?: React.ReactNode; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const toggle = () => setOpen(o => !o);
+  return (
+    <div className={`section meta${open ? ' open' : ''}`} id={id}>
+      <div className="sec-head" onClick={toggle} role="button" tabIndex={0}
+        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggle()}>
+        <span className="sec-num">{icon}</span>
+        <h2 className="sec-title">{title}{badge}</h2>
+        <span className="sec-chevron">▶</span>
+      </div>
+      {open && <div className="sec-body">{children}</div>}
+    </div>
+  );
+}
 
 export default function App() {
   const { visited, quizAnswers, markVisited, recordAnswer } = useProgress();
@@ -66,36 +86,18 @@ export default function App() {
           </div>
         </header>
 
-        <details className="section meta" id="ruta">
-          <summary className="sec-head">
-            <span className="sec-num">🗺️</span>
-            <h2 className="sec-title">Ruta de Aprendizaje</h2>
-          </summary>
-          <div className="sec-body">
-            <Roadmap stages={roadmapStages} />
-          </div>
-        </details>
+        <MetaSection id="ruta" icon="🗺️" title="Ruta de Aprendizaje">
+          <Roadmap stages={roadmapStages} />
+        </MetaSection>
 
-        <details className="section meta" id="glosario">
-          <summary className="sec-head">
-            <span className="sec-num">📖</span>
-            <h2 className="sec-title">Glosario</h2>
-          </summary>
-          <div className="sec-body">
-            <Glossary terms={glossaryTerms} />
-          </div>
-        </details>
+        <MetaSection id="glosario" icon="📖" title="Glosario">
+          <Glossary terms={glossaryTerms} />
+        </MetaSection>
 
-        <details className="section meta" id="ejercicios">
-          <summary className="sec-head">
-            <span className="sec-num">🏋️</span>
-            <h2 className="sec-title">Ejercicios Prácticos</h2>
-            <span className="sec-tag">{exercises.length} ejercicios</span>
-          </summary>
-          <div className="sec-body">
-            <Exercises exercises={exercises} />
-          </div>
-        </details>
+        <MetaSection id="ejercicios" icon="🏋️" title="Ejercicios Prácticos"
+          badge={<span className="sec-tag">{exercises.length} ejercicios</span>}>
+          <Exercises exercises={exercises} />
+        </MetaSection>
 
         <div className="sections-grid">
           {sortedSections.map(s => (

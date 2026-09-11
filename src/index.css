@@ -194,7 +194,8 @@
     transition: transform .18s ease;
   }
   .sections-grid .section[open] > .sec-head .sec-chevron { transform: rotate(90deg); }
-  .section.meta .sec-chevron { display: none; }
+  .section.meta .sec-chevron { margin-left: auto; }
+  .section.meta.open .sec-chevron { transform: rotate(90deg); }
 
   /* body */
   .sec-body { padding: 0 16px 18px; border-top: 1px solid var(--border); padding-top: 14px; }
