@@ -50,14 +50,20 @@
   .nav-logo .sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
   /* search */
-  .nav-search { padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .nav-search { padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative; }
   .nav-search input {
     width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 6px; padding: 6px 10px; color: var(--text);
+    border-radius: 6px; padding: 6px 28px 6px 10px; color: var(--text);
     font-size: 12px; font-family: 'Inter', sans-serif; outline: none;
   }
   .nav-search input::placeholder { color: var(--text-muted); }
   .nav-search input:focus { border-color: var(--border2); }
+  .search-clear {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text-muted); cursor: pointer;
+    font-size: 11px; padding: 2px 4px; line-height: 1;
+  }
+  .search-clear:hover { color: var(--text); }
 
   /* progress counter */
   .nav-stats {
@@ -69,7 +75,20 @@
   .stats-text { font-size: 10px; color: var(--text-muted); white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
 
   .nav-group { font-size: 10px; letter-spacing: 0.9px; color: var(--text-muted);
-    padding: 12px 18px 4px; text-transform: uppercase; }
+    padding: 12px 18px 4px; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between; }
+  .nav-group-count {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1px 7px; font-size: 10px;
+    color: var(--text-muted); letter-spacing: 0; text-transform: none; font-weight: 500;
+  }
+  details.nav-section-group > summary { list-style: none; cursor: pointer; }
+  details.nav-section-group > summary::-webkit-details-marker { display: none; }
+  details.nav-section-group > summary::marker { display: none; }
+  mark.nav-match {
+    background: rgba(253,230,138,.15); color: var(--yellow);
+    border-radius: 2px; padding: 0 1px;
+  }
   nav a {
     display: flex; align-items: center; gap: 8px;
     padding: 5px 18px; text-decoration: none; color: var(--text-dim);
