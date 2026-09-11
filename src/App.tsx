@@ -3,12 +3,14 @@ import { Sidebar } from './components/Sidebar';
 import { SectionView } from './components/Section';
 import { Roadmap } from './components/Roadmap';
 import { Glossary } from './components/Glossary';
+import { Exercises } from './components/Exercises';
 import { useProgress } from './hooks/useProgress';
 import { useScrollProgress } from './hooks/useScrollProgress';
 import { useActiveSection } from './hooks/useActiveSection';
 import { sections } from './data/sections';
 import { roadmapStages } from './data/roadmap';
 import { glossaryTerms } from './data/glossary';
+import { exercises } from './data/exercises';
 
 const QUIZ_TOTAL = 29;
 
@@ -20,7 +22,7 @@ const sortedSections = [...sections].sort(
 export default function App() {
   const { visited, quizAnswers, markVisited, recordAnswer } = useProgress();
   const scrollPct = useScrollProgress();
-  const sectionIds = useMemo(() => ['ruta', 'glosario', ...sortedSections.map(s => s.id)], []);
+  const sectionIds = useMemo(() => ['ruta', 'glosario', 'ejercicios', ...sortedSections.map(s => s.id)], []);
   const activeId = useActiveSection(sectionIds);
   const quizAnsweredCount = Object.keys(quizAnswers).filter(id => /^s\d+$/.test(id)).length;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -81,6 +83,17 @@ export default function App() {
           </summary>
           <div className="sec-body">
             <Glossary terms={glossaryTerms} />
+          </div>
+        </details>
+
+        <details className="section meta" id="ejercicios">
+          <summary className="sec-head">
+            <span className="sec-num">🏋️</span>
+            <h2 className="sec-title">Ejercicios Prácticos</h2>
+            <span className="sec-tag">{exercises.length} ejercicios</span>
+          </summary>
+          <div className="sec-body">
+            <Exercises exercises={exercises} />
           </div>
         </details>
 
