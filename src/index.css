@@ -301,3 +301,7 @@
 .compare-title:first-child {
   margin-top: 0;
 }
+
+#sidebar .hidden-group {
+  display: none;
+}
