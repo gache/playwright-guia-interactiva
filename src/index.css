@@ -423,12 +423,12 @@
     display: grid;
     grid-template-rows: 0fr;
     transition: grid-template-rows 0.28s cubic-bezier(.4,0,.2,1);
-    overflow: hidden;
   }
   .section.open .sec-body-anim {
     grid-template-rows: 1fr;
   }
-  .sec-body-anim > .sec-body {
+  /* clip wrapper: no padding, clips the overflowing sec-body */
+  .sec-body-clip {
     min-height: 0;
     overflow: hidden;
   }

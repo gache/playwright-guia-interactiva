@@ -18,17 +18,6 @@ const DIFF_SUFFIX: Record<NonNullable<Section['difficulty']>, string> = {
   advanced: 'a',
 };
 
-function estimateMinutes(data: Section): number {
-  const words = data.description.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
-  const blockTime = data.blocks.reduce((sum, b) => {
-    if (b.type === 'code') return sum + 0.75;
-    if (b.type === 'quiz') return sum + 1.5;
-    if (b.type === 'exercise') return sum + 2;
-    if (b.type === 'compare') return sum + 1;
-    return sum + 0.4;
-  }, 0);
-  return Math.max(1, Math.ceil(words / 200 + blockTime));
-}
 
 interface SectionProps {
   data: Section;
@@ -50,7 +39,6 @@ export function SectionView({
   const [open, setOpen] = useState(false);
   const previewText = data.description.replace(/<[^>]*>/g, '').slice(0, 130).trim();
   const diffClass = data.difficulty ? ` diff-${DIFF_SUFFIX[data.difficulty]}` : '';
-  const minutes = estimateMinutes(data);
 
   // Open from outside (Siguiente button)
   useEffect(() => {
@@ -93,50 +81,47 @@ export function SectionView({
               <span className={`diff-badge diff-${DIFF_SUFFIX[data.difficulty]}`}>{DIFF_LABEL[data.difficulty]}</span>
             )}
           </div>
-          {!open && previewText && <p className="sec-preview">{previewText}</p>}
-          {!open && (
-            <div className="sec-meta-row">
-              <span className="sec-time">⏱ ~{minutes} min</span>
-              {isVisited && <span className="sec-done-badge">✓</span>}
-            </div>
-          )}
+          {!open && previewText && <p className="sec-preview">{previewText}…</p>}
+          {!open && isVisited && <span className="sec-done-badge">✓</span>}
         </div>
         <span className="sec-chevron">▶</span>
       </div>
       <div className="sec-body-anim" aria-hidden={!open}>
-        <div className="sec-body">
-          <p className="desc" dangerouslySetInnerHTML={{ __html: data.description }} />
-          {data.blocks.map((block, i) => (
-            <BlockView key={i} block={block} quizAnswers={quizAnswers} onAnswer={onAnswer} />
-          ))}
-          <div className="sec-complete-row">
-            {isVisited ? (
-              <>
-                <span className="sec-complete-done">Sección completada</span>
-                <button
-                  className="sec-uncomplete-btn"
-                  onClick={() => onUnComplete(data.id)}
-                  aria-label="Desmarcar como completada"
-                >
-                  Desmarcar
-                </button>
-                {nextId && (
+        <div className="sec-body-clip">
+          <div className="sec-body">
+            <p className="desc" dangerouslySetInnerHTML={{ __html: data.description }} />
+            {data.blocks.map((block, i) => (
+              <BlockView key={i} block={block} quizAnswers={quizAnswers} onAnswer={onAnswer} />
+            ))}
+            <div className="sec-complete-row">
+              {isVisited ? (
+                <>
+                  <span className="sec-complete-done">Sección completada</span>
                   <button
-                    className="sec-next-btn"
-                    onClick={() => {
-                      const el = document.getElementById(nextId);
-                      el?.dispatchEvent(new CustomEvent('section-open-request', { bubbles: true }));
-                    }}
+                    className="sec-uncomplete-btn"
+                    onClick={() => onUnComplete(data.id)}
+                    aria-label="Desmarcar como completada"
                   >
-                    Siguiente <span className="sec-next-arrow">→</span>
+                    Desmarcar
                   </button>
-                )}
-              </>
-            ) : (
-              <button className="sec-complete-btn" onClick={() => onComplete(data.id)}>
-                Marcar como completada
-              </button>
-            )}
+                  {nextId && (
+                    <button
+                      className="sec-next-btn"
+                      onClick={() => {
+                        const el = document.getElementById(nextId);
+                        el?.dispatchEvent(new CustomEvent('section-open-request', { bubbles: true }));
+                      }}
+                    >
+                      Siguiente <span className="sec-next-arrow">→</span>
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button className="sec-complete-btn" onClick={() => onComplete(data.id)}>
+                  Marcar como completada
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

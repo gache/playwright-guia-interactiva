@@ -56,7 +56,9 @@ function MetaSection({ id, icon, title, badge, children }: {
         <span className="sec-chevron">▶</span>
       </div>
       <div className="sec-body-anim" aria-hidden={!open}>
-        <div className="sec-body">{children}</div>
+        <div className="sec-body-clip">
+          <div className="sec-body">{children}</div>
+        </div>
       </div>
     </div>
   );
