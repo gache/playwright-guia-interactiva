@@ -26,12 +26,18 @@ const DATA: Section = {
 };
 
 describe('SectionView', () => {
-  it('renders description, blocks, complete button, and reports answer events', () => {
+  it('renders title, opens on click, shows complete button, and reports answer', () => {
     const onComplete = vi.fn();
     const onAnswer = vi.fn();
-    render(<SectionView data={DATA} isVisited={false} quizAnswers={{}} onComplete={onComplete} onAnswer={onAnswer} />);
+    const onUnComplete = vi.fn();
+    render(<SectionView data={DATA} isVisited={false} quizAnswers={{}} onComplete={onComplete} onUnComplete={onUnComplete} onAnswer={onAnswer} />);
 
     expect(screen.getByText('Instalación')).toBeInTheDocument();
+
+    // open the card
+    fireEvent.click(document.querySelector('.sec-head')!);
+    expect(document.getElementById('s1')).toHaveClass('open');
+
     expect(screen.getByText('Necesitas Node.js.')).toBeInTheDocument();
     expect(document.querySelector('.cb')).toHaveTextContent('npm init playwright@latest');
 
@@ -42,13 +48,18 @@ describe('SectionView', () => {
     expect(onAnswer).toHaveBeenCalledWith('s1', 1);
   });
 
-  it('shows done badge in summary and completed text in body when isVisited=true', () => {
-    render(<SectionView data={DATA} isVisited={true} quizAnswers={{}} onComplete={vi.fn()} onAnswer={vi.fn()} />);
+  it('shows done badge when closed and completed text when open with isVisited=true', () => {
+    const onUnComplete = vi.fn();
+    render(<SectionView data={DATA} isVisited={true} quizAnswers={{}} onComplete={vi.fn()} onUnComplete={onUnComplete} onAnswer={vi.fn()} />);
+
     expect(document.querySelector('.sec-done-badge')).toBeInTheDocument();
-    const details = document.getElementById('s1') as HTMLDetailsElement;
-    details.open = true;
-    fireEvent(details, new Event('toggle'));
+
+    // open to see body content
+    fireEvent.click(document.querySelector('.sec-head')!);
     expect(screen.getByText('Sección completada')).toBeInTheDocument();
     expect(screen.queryByText('Marcar como completada')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Desmarcar'));
+    expect(onUnComplete).toHaveBeenCalledWith('s1');
   });
 });

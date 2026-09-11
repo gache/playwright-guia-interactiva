@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import React from 'react';
 import { Sidebar } from './components/Sidebar';
 import { SectionView } from './components/Section';
@@ -17,8 +17,6 @@ const QUIZ_TOTAL = 29;
 
 const DIFF_ORDER: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
 
-// Sort by difficulty group, then by original num within each group.
-// Reassign sequential nums per group: beginner 01-07, intermediate 01-XX, advanced 01-XX.
 const sortedSections = (() => {
   const ordered = [...sections].sort((a, b) => {
     const da = DIFF_ORDER[a.difficulty ?? 'intermediate'] ?? 1;
@@ -51,35 +49,60 @@ function MetaSection({ id, icon, title, badge, children }: {
   return (
     <div className={`section meta${open ? ' open' : ''}`} id={id}>
       <div className="sec-head" onClick={toggle} role="button" tabIndex={0}
+        aria-expanded={open}
         onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggle()}>
         <span className="sec-num">{icon}</span>
         <h2 className="sec-title">{title}{badge}</h2>
         <span className="sec-chevron">▶</span>
       </div>
-      {open && <div className="sec-body">{children}</div>}
+      <div className="sec-body-anim" aria-hidden={!open}>
+        <div className="sec-body">{children}</div>
+      </div>
     </div>
   );
 }
 
 export default function App() {
-  const { visited, quizAnswers, markVisited, recordAnswer } = useProgress();
+  const { visited, quizAnswers, markVisited, markUnvisited, recordAnswer } = useProgress();
   const scrollPct = useScrollProgress();
   const sectionIds = useMemo(() => ['ruta', 'glosario', 'ejercicios', ...sortedSections.map(s => s.id)], []);
   const activeId = useActiveSection(sectionIds);
   const quizAnsweredCount = Object.keys(quizAnswers).filter(id => /^s\d+$/.test(id)).length;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [diffFilter, setDiffFilter] = useState<Difficulty>('all');
+  const [requestOpenId, setRequestOpenId] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
   const visibleSections = diffFilter === 'all'
     ? sortedSections
     : sortedSections.filter(s => s.difficulty === diffFilter);
 
+  const completedPct = sortedSections.length > 0
+    ? Math.round((visited.length / sortedSections.length) * 100)
+    : 0;
+
+  // Listen for section-open-request CustomEvent from Siguiente button
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const target = (e.target as HTMLElement).closest('[id]');
+      if (!target) return;
+      const id = target.id;
+      setDiffFilter('all');
+      setRequestOpenId(id);
+    };
+    gridRef.current?.addEventListener('section-open-request', handler);
+    return () => gridRef.current?.removeEventListener('section-open-request', handler);
+  }, []);
+
   return (
     <>
+      <a href="#main-content" className="skip-link">Saltar al contenido</a>
       <div id="progress" style={{ width: `${scrollPct}%` }} />
       <button
         className={`hamburger${sidebarOpen ? ' open' : ''}`}
         onClick={() => setSidebarOpen(o => !o)}
-        aria-label="Toggle menu"
+        aria-label="Abrir menú de navegación"
       >☰</button>
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       <Sidebar
@@ -89,9 +112,11 @@ export default function App() {
         quizAnsweredCount={quizAnsweredCount}
         quizTotal={QUIZ_TOTAL}
         mobileOpen={sidebarOpen}
+        collapsed={sidebarCollapsed}
         onMobileClose={() => setSidebarOpen(false)}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
       />
-      <main>
+      <main id="main-content" className={sidebarCollapsed ? 'sidebar-collapsed' : ''}>
         <header className="page-head">
           <div className="page-head-badge">Guía de Estudio Interactiva</div>
           <h1>
@@ -102,6 +127,18 @@ export default function App() {
             Todo lo que necesitas para aprender Playwright en español: ejemplos comentados,
             quizzes, glosario, ejercicios prácticos con soluciones y un mini proyecto completo.
           </p>
+
+          {visited.length > 0 && (
+            <div className="page-progress">
+              <div className="page-progress-bar">
+                <div className="page-progress-fill" style={{ width: `${completedPct}%` }} />
+              </div>
+              <span className="page-progress-label">
+                {visited.length}/{sortedSections.length} completadas · {completedPct}%
+              </span>
+            </div>
+          )}
+
           <div className="page-stats">
             <div className="page-stat"><span className="page-stat-n">31</span><span className="page-stat-l">secciones</span></div>
             <div className="page-stat-div" />
@@ -127,11 +164,9 @@ export default function App() {
           <MetaSection id="ruta" icon="🗺️" title="Ruta de Aprendizaje">
             <Roadmap stages={roadmapStages} />
           </MetaSection>
-
           <MetaSection id="glosario" icon="📖" title="Glosario">
             <Glossary terms={glossaryTerms} />
           </MetaSection>
-
           <MetaSection id="ejercicios" icon="🏋️" title="Ejercicios Prácticos"
             badge={<span className="sec-tag">{exercises.length} ejercicios</span>}>
             <Exercises exercises={exercises} />
@@ -144,16 +179,36 @@ export default function App() {
               key={f.key}
               className={`diff-filter-btn${diffFilter === f.key ? ' active' : ''}${f.key !== 'all' ? ` diff-filter-${f.key}` : ''}`}
               onClick={() => setDiffFilter(f.key)}
+              aria-pressed={diffFilter === f.key}
             >
               {f.label} <span className="diff-filter-count">{f.count}</span>
             </button>
           ))}
         </div>
 
-        <div className="sections-grid">
-          {visibleSections.map((s, i) => (
-            <SectionView key={s.id} data={s} isVisited={visited.includes(s.id)} quizAnswers={quizAnswers} onComplete={markVisited} onAnswer={recordAnswer} nextId={visibleSections[i + 1]?.id} />
-          ))}
+        <div className="sections-grid" ref={gridRef}>
+          {visibleSections.length === 0 ? (
+            <div className="sections-empty">
+              <span className="sections-empty-icon">🔍</span>
+              <p>No hay secciones para este nivel.</p>
+              <button className="sec-complete-btn" onClick={() => setDiffFilter('all')}>Ver todas</button>
+            </div>
+          ) : (
+            visibleSections.map((s, i) => (
+              <SectionView
+                key={s.id}
+                data={s}
+                isVisited={visited.includes(s.id)}
+                quizAnswers={quizAnswers}
+                onComplete={markVisited}
+                onUnComplete={markUnvisited}
+                onAnswer={recordAnswer}
+                nextId={visibleSections[i + 1]?.id}
+                requestOpen={requestOpenId === s.id}
+                onRequestHandled={() => setRequestOpenId(null)}
+              />
+            ))
+          )}
         </div>
       </main>
     </>

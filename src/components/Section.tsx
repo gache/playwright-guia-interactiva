@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { Block, Section } from '../types';
 import { Callout } from './Callout';
 import { CodeBlock } from './CodeBlock';
@@ -17,22 +18,71 @@ const DIFF_SUFFIX: Record<NonNullable<Section['difficulty']>, string> = {
   advanced: 'a',
 };
 
+function estimateMinutes(data: Section): number {
+  const words = data.description.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
+  const blockTime = data.blocks.reduce((sum, b) => {
+    if (b.type === 'code') return sum + 0.75;
+    if (b.type === 'quiz') return sum + 1.5;
+    if (b.type === 'exercise') return sum + 2;
+    if (b.type === 'compare') return sum + 1;
+    return sum + 0.4;
+  }, 0);
+  return Math.max(1, Math.ceil(words / 200 + blockTime));
+}
+
 interface SectionProps {
   data: Section;
   isVisited: boolean;
   quizAnswers: Record<string, number>;
   onComplete: (id: string) => void;
+  onUnComplete: (id: string) => void;
   onAnswer: (id: string, index: number) => void;
   nextId?: string;
+  requestOpen?: boolean;
+  onRequestHandled?: () => void;
 }
 
-export function SectionView({ data, isVisited, quizAnswers, onComplete, onAnswer, nextId }: SectionProps) {
+export function SectionView({
+  data, isVisited, quizAnswers,
+  onComplete, onUnComplete, onAnswer,
+  nextId, requestOpen, onRequestHandled,
+}: SectionProps) {
+  const [open, setOpen] = useState(false);
   const previewText = data.description.replace(/<[^>]*>/g, '').slice(0, 130).trim();
-
   const diffClass = data.difficulty ? ` diff-${DIFF_SUFFIX[data.difficulty]}` : '';
+  const minutes = estimateMinutes(data);
+
+  // Open from outside (Siguiente button)
+  useEffect(() => {
+    if (requestOpen && !open) {
+      setOpen(true);
+      setTimeout(() => {
+        document.getElementById(data.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+      onRequestHandled?.();
+    }
+  }, [requestOpen]);
+
+  // Escape closes
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open]);
+
+  const toggle = () => setOpen(o => !o);
+
   return (
-    <details className={`section${diffClass}`} id={data.id}>
-      <summary className="sec-head">
+    <div className={`section${diffClass}${open ? ' open' : ''}`} id={data.id}>
+      <div
+        className="sec-head"
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        onClick={toggle}
+        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggle()}
+      >
         <span className="sec-num">{data.num}</span>
         <div className="sec-head-content">
           <div className="sec-title-row">
@@ -43,50 +93,59 @@ export function SectionView({ data, isVisited, quizAnswers, onComplete, onAnswer
               <span className={`diff-badge diff-${DIFF_SUFFIX[data.difficulty]}`}>{DIFF_LABEL[data.difficulty]}</span>
             )}
           </div>
-          {previewText && <p className="sec-preview">{previewText}</p>}
-        </div>
-        {isVisited && <span className="sec-done-badge">✓</span>}
-        <span className="sec-chevron">▶</span>
-      </summary>
-      <div className="sec-body">
-        <p className="desc" dangerouslySetInnerHTML={{ __html: data.description }} />
-        {data.blocks.map((block, i) => (
-          <BlockView key={i} block={block} quizAnswers={quizAnswers} onAnswer={onAnswer} />
-        ))}
-        <div className="sec-complete-row">
-          {isVisited ? (
-            <>
-              <span className="sec-complete-done">Sección completada</span>
-              {nextId && (
-                <button
-                  className="sec-next-btn"
-                  onClick={() => {
-                    const el = document.getElementById(nextId) as HTMLDetailsElement | null;
-                    if (el) {
-                      el.open = true;
-                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                  }}
-                >
-                  Siguiente <span className="sec-next-arrow">→</span>
-                </button>
-              )}
-            </>
-          ) : (
-            <button className="sec-complete-btn" onClick={() => onComplete(data.id)}>
-              Marcar como completada
-            </button>
+          {!open && previewText && <p className="sec-preview">{previewText}</p>}
+          {!open && (
+            <div className="sec-meta-row">
+              <span className="sec-time">⏱ ~{minutes} min</span>
+              {isVisited && <span className="sec-done-badge">✓</span>}
+            </div>
           )}
         </div>
+        <span className="sec-chevron">▶</span>
       </div>
-    </details>
+      <div className="sec-body-anim" aria-hidden={!open}>
+        <div className="sec-body">
+          <p className="desc" dangerouslySetInnerHTML={{ __html: data.description }} />
+          {data.blocks.map((block, i) => (
+            <BlockView key={i} block={block} quizAnswers={quizAnswers} onAnswer={onAnswer} />
+          ))}
+          <div className="sec-complete-row">
+            {isVisited ? (
+              <>
+                <span className="sec-complete-done">Sección completada</span>
+                <button
+                  className="sec-uncomplete-btn"
+                  onClick={() => onUnComplete(data.id)}
+                  aria-label="Desmarcar como completada"
+                >
+                  Desmarcar
+                </button>
+                {nextId && (
+                  <button
+                    className="sec-next-btn"
+                    onClick={() => {
+                      const el = document.getElementById(nextId);
+                      el?.dispatchEvent(new CustomEvent('section-open-request', { bubbles: true }));
+                    }}
+                  >
+                    Siguiente <span className="sec-next-arrow">→</span>
+                  </button>
+                )}
+              </>
+            ) : (
+              <button className="sec-complete-btn" onClick={() => onComplete(data.id)}>
+                Marcar como completada
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function BlockView({
-  block,
-  quizAnswers,
-  onAnswer,
+  block, quizAnswers, onAnswer,
 }: {
   block: Block;
   quizAnswers: Record<string, number>;

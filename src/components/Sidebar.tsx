@@ -20,7 +20,9 @@ interface SidebarProps {
   quizAnsweredCount: number;
   quizTotal: number;
   mobileOpen?: boolean;
+  collapsed?: boolean;
   onMobileClose?: () => void;
+  onToggleCollapse?: () => void;
 }
 
 function Highlight({ text, query }: { text: string; query: string }) {
@@ -36,7 +38,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTotal, mobileOpen, onMobileClose }: SidebarProps) {
+export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTotal, mobileOpen, collapsed, onMobileClose, onToggleCollapse }: SidebarProps) {
   const [query, setQuery] = useState('');
   const q = query.toLowerCase().trim();
 
@@ -58,89 +60,101 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
   const quizPct = quizTotal > 0 ? (quizAnsweredCount / quizTotal) * 100 : 0;
 
   return (
-    <nav id="sidebar" className={mobileOpen ? 'mobile-open' : ''}>
+    <nav id="sidebar" className={[mobileOpen ? 'mobile-open' : '', collapsed ? 'collapsed' : ''].filter(Boolean).join(' ')}>
       <div className="nav-logo">
         <div className="mark">Playwright</div>
-        <div className="sub">Guía de Estudio · ruta guiada + {sections.length} lecciones</div>
+        {!collapsed && <div className="sub">Guía de Estudio · ruta guiada + {sections.length} lecciones</div>}
       </div>
+      <button
+        className="sidebar-collapse-btn"
+        onClick={onToggleCollapse}
+        aria-label={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
+        title={collapsed ? 'Expandir' : 'Colapsar'}
+      >
+        {collapsed ? '›' : '‹'}
+      </button>
 
-      <div className="nav-search">
-        <input
-          type="text"
-          placeholder="Buscar sección…"
-          autoComplete="off"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
-        {query.length > 0 && (
-          <button className="search-clear" onClick={() => setQuery('')} aria-label="Limpiar búsqueda">✕</button>
-        )}
-      </div>
+      {!collapsed && (
+        <>
+          <div className="nav-search">
+            <input
+              type="text"
+              placeholder="Buscar sección…"
+              autoComplete="off"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
+            {query.length > 0 && (
+              <button className="search-clear" onClick={() => setQuery('')} aria-label="Limpiar búsqueda">✕</button>
+            )}
+          </div>
 
-      <div className="nav-stats">
-        <div className="stats-bar">
-          <div className="stats-fill" style={{ width: `${visitedPct}%` }} />
-        </div>
-        <span className="stats-text">
-          {visited.length} / {sections.length}
-        </span>
-      </div>
-      <div className="nav-stats">
-        <div className="stats-bar">
-          <div className="stats-fill quiz-fill" style={{ width: `${quizPct}%` }} />
-        </div>
-        <span className="stats-text">
-          🧠 {quizAnsweredCount} / {quizTotal}
-        </span>
-      </div>
+          <div className="nav-stats">
+            <div className="stats-bar">
+              <div className="stats-fill" style={{ width: `${visitedPct}%` }} />
+            </div>
+            <span className="stats-text">
+              {visited.length} / {sections.length}
+            </span>
+          </div>
+          <div className="nav-stats">
+            <div className="stats-bar">
+              <div className="stats-fill quiz-fill" style={{ width: `${quizPct}%` }} />
+            </div>
+            <span className="stats-text">
+              🧠 {quizAnsweredCount} / {quizTotal}
+            </span>
+          </div>
 
-      <div className="nav-group">Antes de Empezar</div>
-      <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''} onClick={() => onMobileClose?.()}>
-        <span className="n">🗺️</span> Ruta de Aprendizaje
-      </a>
-      <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => onMobileClose?.()}>
-        <span className="n">📖</span> Glosario
-      </a>
+          <div className="nav-group">Antes de Empezar</div>
+          <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''} onClick={() => onMobileClose?.()}>
+            <span className="n">🗺️</span> Ruta de Aprendizaje
+          </a>
+          <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => onMobileClose?.()}>
+            <span className="n">📖</span> Glosario
+          </a>
 
-      {groups.map(([group, items]) => {
-        const visibleCount = q.length > 0 ? items.filter(s => matches(s.title)).length : items.length;
-        const groupHidden = q.length > 0 && visibleCount === 0;
-        const doneCount = items.filter(s => visited.includes(s.id)).length;
-        if (groupHidden) return null;
-        return (
-          <details key={group} className="nav-section-group" open>
-            <summary className="nav-group">
-              {group}
-              <span className="nav-group-progress">
-                <span className="nav-group-done">{doneCount}</span>
-                <span className="nav-group-sep">/</span>
-                <span className="nav-group-total">{items.length}</span>
-              </span>
-            </summary>
-            {items.map(s => {
-              if (!matches(s.title)) return null;
-              const classes = [
-                activeId === s.id ? 'active' : '',
-                visited.includes(s.id) ? 'done' : '',
-              ].filter(Boolean).join(' ');
-              return (
-                <a key={s.id} href={`#${s.id}`} className={classes} onClick={() => { const el = document.getElementById(s.id) as HTMLDetailsElement | null; if (el) el.open = true; onMobileClose?.(); }}>
-                  <span className="n">{s.num}</span>
-                  {s.difficulty && <span className={`diff-dot diff-${DIFF_SUFFIX[s.difficulty]}`} />}
-                  {' '}
-                  <Highlight text={s.title} query={q} />
-                  <span className="nav-check">✓</span>
-                </a>
-              );
-            })}
-          </details>
-        );
-      })}
+          {groups.map(([group, items]) => {
+            const visibleCount = q.length > 0 ? items.filter(s => matches(s.title)).length : items.length;
+            const groupHidden = q.length > 0 && visibleCount === 0;
+            const doneCount = items.filter(s => visited.includes(s.id)).length;
+            if (groupHidden) return null;
+            return (
+              <details key={group} className="nav-section-group" open>
+                <summary className="nav-group">
+                  {group}
+                  <span className="nav-group-progress">
+                    <span className="nav-group-done">{doneCount}</span>
+                    <span className="nav-group-sep">/</span>
+                    <span className="nav-group-total">{items.length}</span>
+                  </span>
+                </summary>
+                {items.map(s => {
+                  if (!matches(s.title)) return null;
+                  const classes = [
+                    activeId === s.id ? 'active' : '',
+                    visited.includes(s.id) ? 'done' : '',
+                  ].filter(Boolean).join(' ');
+                  return (
+                    <a key={s.id} href={`#${s.id}`} className={classes} onClick={() => { onMobileClose?.(); }}>
+                      <span className="n">{s.num}</span>
+                      {s.difficulty && <span className={`diff-dot diff-${DIFF_SUFFIX[s.difficulty]}`} />}
+                      {' '}
+                      <Highlight text={s.title} query={q} />
+                      <span className="nav-check">✓</span>
+                    </a>
+                  );
+                })}
+              </details>
+            );
+          })}
 
-      <div className="nav-group">Práctica</div>
-      <a href="#ejercicios" className={activeId === 'ejercicios' ? 'active' : ''} onClick={() => onMobileClose?.()}>
-        <span className="n">🏋️</span> Ejercicios Prácticos
-      </a>
+          <div className="nav-group">Práctica</div>
+          <a href="#ejercicios" className={activeId === 'ejercicios' ? 'active' : ''} onClick={() => onMobileClose?.()}>
+            <span className="n">🏋️</span> Ejercicios Prácticos
+          </a>
+        </>
+      )}
     </nav>
   );
 }

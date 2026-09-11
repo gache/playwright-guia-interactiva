@@ -46,5 +46,14 @@ export function useProgress() {
     });
   }, []);
 
-  return { visited: state.visited, quizAnswers: state.quiz, markVisited, recordAnswer };
+  const markUnvisited = useCallback((id: string) => {
+    setState(prev => {
+      if (!prev.visited.includes(id)) return prev;
+      const next = { ...prev, visited: prev.visited.filter(v => v !== id) };
+      saveProgress(next);
+      return next;
+    });
+  }, []);
+
+  return { visited: state.visited, quizAnswers: state.quiz, markVisited, markUnvisited, recordAnswer };
 }
