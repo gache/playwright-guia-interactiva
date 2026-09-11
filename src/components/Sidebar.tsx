@@ -86,10 +86,10 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
       </div>
 
       <div className="nav-group">Antes de Empezar</div>
-      <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''}>
+      <a href="#ruta" className={activeId === 'ruta' ? 'active' : ''} onClick={() => { const el = document.getElementById('ruta') as HTMLDetailsElement | null; if (el) el.open = true; }}>
         <span className="n">🗺️</span> Ruta de Aprendizaje<span className="nav-check">✓</span>
       </a>
-      <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''}>
+      <a href="#glosario" className={activeId === 'glosario' ? 'active' : ''} onClick={() => { const el = document.getElementById('glosario') as HTMLDetailsElement | null; if (el) el.open = true; }}>
         <span className="n">📖</span> Glosario<span className="nav-check">✓</span>
       </a>
 
@@ -107,7 +107,7 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
                 .filter(Boolean)
                 .join(' ');
               return (
-                <a key={s.id} href={`#${s.id}`} className={classes}>
+                <a key={s.id} href={`#${s.id}`} className={classes} onClick={() => { const el = document.getElementById(s.id) as HTMLDetailsElement | null; if (el) el.open = true; }}>
                   <span className="n">{s.num}</span>
                   {s.difficulty && <span className={`diff-dot diff-${DIFF_SUFFIX[s.difficulty]}`} />}
                   {' '}
