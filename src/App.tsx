@@ -15,7 +15,24 @@ import { exercises } from './data/exercises';
 
 const QUIZ_TOTAL = 29;
 
-const sortedSections = [...sections].sort((a, b) => Number(a.num) - Number(b.num));
+const DIFF_ORDER: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
+
+// Sort by difficulty group, then by original num within each group.
+// Reassign sequential nums per group: beginner 01-07, intermediate 01-XX, advanced 01-XX.
+const sortedSections = (() => {
+  const ordered = [...sections].sort((a, b) => {
+    const da = DIFF_ORDER[a.difficulty ?? 'intermediate'] ?? 1;
+    const db = DIFF_ORDER[b.difficulty ?? 'intermediate'] ?? 1;
+    if (da !== db) return da - db;
+    return Number(a.num) - Number(b.num);
+  });
+  const counters: Record<string, number> = {};
+  return ordered.map(s => {
+    const d = s.difficulty ?? 'intermediate';
+    counters[d] = (counters[d] ?? 0) + 1;
+    return { ...s, num: String(counters[d]).padStart(2, '0') };
+  });
+})();
 
 type Difficulty = 'all' | 'beginner' | 'intermediate' | 'advanced';
 const DIFF_FILTERS: { key: Difficulty; label: string; count: number }[] = [
