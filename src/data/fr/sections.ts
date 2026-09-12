@@ -358,5 +358,385 @@ export const sections: Section[] = [
         "explanationHtml": "Un temps fixe n'est jamais exact : s'il est trop long, vous gaspillez des secondes à chaque exécution ; s'il est trop court (par exemple sur un runner CI plus lent), le test échoue même si l'appli fonctionne bien. Attendre une condition réelle résout les deux problèmes."
       }
     ]
+  },
+  {
+    "id": "s9",
+    "num": "09",
+    "group": "Avancé",
+    "title": "Frames (iFrames)",
+    "difficulty": "intermediate",
+    "description": "Pour interagir avec un <code>&lt;iframe&gt;</code>, obtenez d'abord le frame. Vous l'utilisez ensuite exactement comme <code>page</code>.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Un iframe est littéralement un document HTML distinct intégré dans la page. Playwright doit savoir explicitement que vous voulez « entrer » dans ce document avant d'y chercher des éléments."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "// frameLocator — méthode recommandée\nconst frame = page.frameLocator('iframe[name=\"pago\"]');\n\nawait frame.getByLabel('Número de tarjeta').fill('4111 1111 1111 1111');\nawait frame.getByLabel('CVV').fill('123');\nawait frame.getByRole('button', { name: 'Pagar' }).click();\n\n// Objet Frame (alternative)\nconst f = page.frame({ name: 'mi-iframe' });\nawait f.locator('input.nombre').fill('Juan');"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s9",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Quelle méthode est recommandée pour travailler avec un iframe ?",
+        "options": [
+          "<code>page.evaluate()</code> avec du JavaScript manuel.",
+          "Il n'est pas possible d'interagir avec des iframes dans Playwright.",
+          "<code>page.frameLocator()</code>, qui s'utilise exactement comme <code>page</code>.",
+          "<code>page.locator()</code> directement, cela fonctionne pareil dedans et en dehors de l'iframe."
+        ],
+        "answerIndex": 2,
+        "explanationHtml": "<code>frameLocator()</code> est la façon moderne et recommandée : il renvoie un objet avec la même API que <code>page</code>, donc vous pouvez enchaîner <code>.getByLabel()</code>, <code>.click()</code>, etc. sans changer votre façon de penser."
+      }
+    ]
+  },
+  {
+    "id": "s10",
+    "num": "10",
+    "group": "Avancé",
+    "title": "Dialogs (alert, confirm, prompt)",
+    "difficulty": "intermediate",
+    "description": "Les boîtes de dialogue natives du navigateur se capturent avec l'événement <code>dialog</code>. Enregistrez le handler AVANT l'action qui le déclenche.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Les boîtes de dialogue natives (alert, confirm, prompt) bloquent le navigateur. Si vous n'enregistrez pas le handler à temps, votre test reste bloqué à attendre quelque chose que vous ne pourrez jamais cliquer."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "// Accepter n'importe quelle boîte de dialogue\npage.on('dialog', dialog => dialog.accept());\n\n// Gérer selon le type\npage.on('dialog', async dialog => {\n  console.log(dialog.type);        // 'alert' | 'confirm' | 'prompt'\n  console.log(dialog.message());\n  if (dialog.type === 'prompt') {\n    await dialog.accept('Mi respuesta');\n  } else {\n    await dialog.accept();\n  }\n});\n\n// Seulement la PROCHAINE boîte de dialogue (pas toutes les futures)\npage.once('dialog', d => d.accept());\nawait page.getByRole('button', { name: 'Eliminar cuenta' }).click();"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s10",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Pourquoi faut-il enregistrer <code>page.on('dialog', ...)</code> AVANT le clic qui déclenche la boîte de dialogue ?",
+        "options": [
+          "Parce que TypeScript l'exige à cause du typage strict.",
+          "Parce que la boîte de dialogue bloque le navigateur dès qu'elle apparaît — si le handler n'est pas prêt, Playwright ne peut pas l'accepter et le test reste en attente.",
+          "Parce que l'événement 'dialog' ne se déclenche qu'une seule fois par session de test.",
+          "C'est seulement une bonne pratique de style, mais cela fonctionne pareil si on l'enregistre après."
+        ],
+        "answerIndex": 1,
+        "explanationHtml": "Les boîtes de dialogue natives sont bloquantes par conception du navigateur. Le bon schéma est toujours : d'abord <code>page.on('dialog', ...)</code>, ensuite l'action qui l'ouvre — jamais l'inverse."
+      }
+    ]
+  },
+  {
+    "id": "s11",
+    "num": "11",
+    "group": "Avancé",
+    "title": "Popups (nouvelles fenêtres)",
+    "difficulty": "intermediate",
+    "description": "Fenêtres ouvertes avec <code>target=\"_blank\"</code>. Écoutez l'événement <strong>avant</strong> le clic qui les ouvre.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Un lien avec <code>target=\"_blank\"</code> ouvre un nouvel onglet presque instantanément. Si vous écoutez l'événement après le clic, vous risquez de le manquer."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "const [popup] = await Promise.all([\n  page.waitForEvent('popup'),\n  page.getByRole('link', { name: 'Abrir en nueva pestaña' }).click(),\n]);\nawait popup.waitForLoadState();\nawait expect(popup).toHaveURL(/terminos/);\nawait popup.close();"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s11",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Pourquoi utilise-t-on <code>Promise.all([page.waitForEvent('popup'), link.click()])</code> plutôt que de cliquer puis attendre ?",
+        "options": [
+          "Parce que cela améliore la performance générale du test.",
+          "Parce que <code>Promise.all</code> démarre les deux promesses avant d'attendre, ce qui évite la race condition où le popup s'ouvre avant que vous ne commenciez à écouter.",
+          "Par style de code ; les deux formes sont équivalentes en pratique.",
+          "Parce que <code>waitForEvent</code> ne peut pas être utilisé en dehors d'un <code>Promise.all</code>."
+        ],
+        "answerIndex": 1,
+        "explanationHtml": "C'est le même schéma qui évite de manquer l'événement \"dialog\" : enregistrer l'écoute et déclencher l'action au même instant, pas en séquence."
+      }
+    ]
+  },
+  {
+    "id": "s12",
+    "num": "12",
+    "group": "Avancé",
+    "title": "File Upload",
+    "difficulty": "intermediate",
+    "description": "Simule la sélection de fichiers sans ouvrir la boîte de dialogue du système d'exploitation.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Les sélecteurs de fichiers du système d'exploitation ne peuvent pas être automatisés directement. Playwright les évite complètement en injectant le fichier dans l'input."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "await page.setInputFiles('input[type=\"file\"]', './foto.png');\nawait page.setInputFiles('input[type=\"file\"]', ['./a.png', './b.pdf']);\nawait page.setInputFiles('input[type=\"file\"]', []);  // nettoyer\n\n// Avec un locator\nawait page.getByLabel('Sube tu CV').setInputFiles('./mi-cv.pdf');"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s12",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Que fait <code>setInputFiles('input[type=\"file\"]', [])</code> avec un tableau vide ?",
+        "options": [
+          "Lève une erreur car il faut au moins un fichier.",
+          "Ouvre la boîte de dialogue native du système d'exploitation.",
+          "Efface la sélection de fichiers de l'input.",
+          "Sélectionne tous les fichiers du dossier actuel."
+        ],
+        "answerIndex": 2,
+        "explanationHtml": "Passer un tableau vide est la façon de simuler que l'utilisateur a annulé ou effacé sa sélection, sans avoir à interagir avec une boîte de dialogue du système."
+      }
+    ]
+  },
+  {
+    "id": "s13",
+    "num": "13",
+    "group": "Avancé",
+    "title": "Téléchargements",
+    "difficulty": "intermediate",
+    "description": "Capture les fichiers téléchargés. Le schéma est le même qu'avec les popups : écoutez avant l'action.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Comme pour les popups et les dialogs, un téléchargement est un événement qui peut se déclencher très rapidement. Le schéma « écouter avant d'agir » se répète dans Playwright pour la même raison."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "const [download] = await Promise.all([\n  page.waitForEvent('download'),\n  page.getByRole('button', { name: 'Descargar Reporte' }).click(),\n]);\nconsole.log(download.suggestedFilename());         // \"reporte.pdf\"\nawait download.saveAs('./reportes/reporte.pdf');\nawait download.delete();                            // nettoie le fichier temporaire"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s13",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Après avoir capturé l'événement <code>'download'</code>, que fait <code>download.saveAs(chemin)</code> ?",
+        "options": [
+          "Annule le téléchargement.",
+          "Enregistre le fichier téléchargé (qui se trouve dans un dossier temporaire) à l'emplacement indiqué.",
+          "Ouvre le fichier téléchargé dans le navigateur.",
+          "Vérifie que le téléchargement a réussi (c'est une assertion)."
+        ],
+        "answerIndex": 1,
+        "explanationHtml": "Playwright enregistre automatiquement chaque téléchargement dans un fichier temporaire ; <code>saveAs()</code> est ce qui déplace ce fichier là où vous le décidez pour l'inspecter ou le conserver."
+      }
+    ]
+  },
+  {
+    "id": "s14",
+    "num": "14",
+    "group": "Avancé",
+    "title": "Cookies",
+    "difficulty": "intermediate",
+    "description": "Gérez les cookies du contexte pour simuler des sessions sans passer par le flux de connexion à chaque test.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Se connecter via l'UI à chaque test est lent. Injecter des cookies ou le <code>storageState</code> sauvegardé vous permet de démarrer chaque test déjà authentifié."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "await context.addCookies([{\n  name: 'session_token', value: 'eyJhbGci...',\n  domain: 'mi-app.com', path: '/',\n  httpOnly: true, secure: true,\n}]);\n\nconst cookies = await context.cookies();\nawait context.clearCookies();\n\n// Sauvegarder l'état complet (cookies + localStorage) pour réutiliser la session\nawait context.storageState({ path: './auth.json' });"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s14",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Que sauvegarde <code>context.storageState({ path: './auth.json' })</code> ?",
+        "options": [
+          "Une capture d'écran de l'état actuel.",
+          "Seulement les cookies du contexte.",
+          "L'historique de navigation.",
+          "Les cookies et le localStorage ensemble, dans un fichier réutilisable comme session sauvegardée."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "<code>storageState</code> est la façon recommandée de « sauter » la connexion dans les tests : vous vous connectez une fois, sauvegardez l'état, et le réutilisez comme point de départ dans d'autres tests."
+      }
+    ]
+  },
+  {
+    "id": "s15",
+    "num": "15",
+    "group": "Avancé",
+    "title": "Local Storage / Session Storage",
+    "difficulty": "intermediate",
+    "description": "Accédez au stockage du navigateur avec <code>page.evaluate()</code>, qui exécute du code JS dans le contexte de la page.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> localStorage ne fait pas partie de l'API de Playwright, il fait partie du navigateur. <code>page.evaluate()</code> est le pont qui vous permet d'exécuter du vrai JavaScript dans la page."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "await page.evaluate(() => {\n  localStorage.setItem('tema', 'oscuro');\n  localStorage.setItem('usuario', JSON.stringify({ id: 42 }));\n});\n\nconst tema = await page.evaluate(() => localStorage.getItem('tema'));\n\nawait page.evaluate(() => {\n  localStorage.clear();\n  sessionStorage.clear();\n});"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s15",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Pourquoi avez-vous besoin de <code>page.evaluate()</code> pour lire ou écrire dans localStorage, plutôt qu'une méthode directe de Playwright ?",
+        "options": [
+          "Cela ne fonctionne que sur Chromium, pas sur Firefox ou WebKit.",
+          "C'est un bug connu que Playwright n'a pas corrigé.",
+          "Playwright ne prend pas du tout en charge localStorage.",
+          "localStorage est une API du navigateur, pas de Playwright ; <code>evaluate()</code> exécute votre fonction dans le contexte de la page, où <code>localStorage</code> existe bel et bien."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "<code>page.evaluate()</code> est votre porte d'entrée vers toute API du navigateur que Playwright n'expose pas directement : il exécute le callback dans la page, pas dans votre script Node."
+      }
+    ]
+  },
+  {
+    "id": "s16",
+    "num": "16",
+    "group": "Avancé",
+    "title": "API Testing (Request)",
+    "difficulty": "advanced",
+    "description": "Playwright peut effectuer des requêtes HTTP directement sans ouvrir de navigateur. Idéal pour préparer des données de test ou vérifier des endpoints REST.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Tous les tests n'ont pas besoin d'un navigateur. Créer des données de test (ou vérifier un backend) via une API directe est bien plus rapide que de le faire clic par clic dans l'UI."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "test('API — CRUD usuario', async ({ request }) => {\n  // GET\n  const res = await request.get('https://api.app.com/usuarios');\n  await expect(res).toBeOK();\n  const lista = await res.json();\n\n  // POST — créer\n  const post = await request.post('https://api.app.com/usuarios', {\n    data: { nombre: 'Ana García', email: 'ana@test.com' },\n    headers: { Authorization: 'Bearer mi-token' },\n  });\n  await expect(post).toHaveStatus(201);\n\n  // PUT / DELETE\n  const { id } = await post.json();\n  await request.put(`/usuarios/${id}`, { data: { nombre: 'Ana López' } });\n  await request.delete(`/usuarios/${id}`);\n  await request.dispose();\n});"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s16",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Quel est l'avantage clé d'utiliser le fixture <code>request</code> plutôt que de simuler l'UI pour préparer des données de test ?",
+        "options": [
+          "C'est bien plus rapide et stable car cela saute complètement l'UI et parle directement à l'API.",
+          "<code>request</code> peut cliquer sur des boutons plus vite que <code>page</code>.",
+          "Cela ne fonctionne qu'avec des API GraphQL.",
+          "<code>request</code> n'a pas besoin d'authentification."
+        ],
+        "answerIndex": 0,
+        "explanationHtml": "Utiliser <code>request</code> pour créer ou supprimer des données de setup (au lieu de remplir des formulaires) permet à vos tests d'UI de se concentrer uniquement sur ce que vous voulez vraiment tester, et de s'exécuter bien plus vite."
+      }
+    ]
+  },
+  {
+    "id": "s17",
+    "num": "17",
+    "group": "Avancé",
+    "title": "Intercepter et Mocker les Requêtes Réseau",
+    "difficulty": "advanced",
+    "description": "Avec <code>page.route()</code>, vous interceptez toute requête faite par la page avant qu'elle n'atteigne le serveur, et vous décidez quoi répondre. Cela sert à simuler des erreurs du backend, accélérer les tests en bloquant des ressources inutiles, ou tester l'UI sans dépendre d'un serveur réel.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Dépendre d'un backend réel rend les tests lents, instables et parfois impossibles à écrire (comment provoquer une erreur 500 exprès ?). Intercepter le réseau vous donne un contrôle total sur ce que la page reçoit."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript — Mocker une réponse complète",
+          "langClass": "ts",
+          "code": "await page.route('**/api/usuarios', async route => {\n  await route.fulfill({\n    status: 200,\n    contentType: 'application/json',\n    body: JSON.stringify([{ id: 1, nombre: 'Usuario de prueba' }]),\n  });\n});\nawait page.goto('/usuarios');\n// La page ne touche jamais le backend réel"
+        }
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript — Modifier une réponse réelle, et bloquer des ressources",
+          "langClass": "ts",
+          "code": "await page.route('**/api/usuarios', async route => {\n  const response = await route.fetch();            // laisse passer la requête réelle\n  const body = await response.json();\n  body.push({ id: 999, nombre: 'Usuario inyectado' }); // vous modifiez le résultat\n  await route.fulfill({ response, body: JSON.stringify(body) });\n});\n\n// Bloquer les requêtes dont vous n'avez pas besoin — tests plus rapides et plus stables\nawait page.route('**/*.{png,jpg,jpeg}', route => route.abort());\nawait page.route('**/analytics/**', route => route.abort());"
+        }
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "icon": "💡",
+        "html": "Pour simuler une erreur du serveur, il suffit de changer le <code>status</code> : <code>route.fulfill({'{'} status: 500, body: 'Erreur interne' {'}'})</code> — vous testez ainsi comment réagit votre UI sans avoir à casser le backend réel."
+      },
+      {
+        "type": "compare",
+        "title": "",
+        "bad": {
+          "label": "❌ Sans mock — dépend de données réelles",
+          "langClass": "bad",
+          "code": "// Le test échoue si le backend est en panne,\n// si un autre test a déjà supprimé cet utilisateur, etc.\nawait page.goto('/usuarios');\nawait expect(page.getByText('Ana García')).toBeVisible();"
+        },
+        "good": {
+          "label": "✅ Avec mock — déterministe",
+          "langClass": "good",
+          "code": "// Le résultat est toujours le même,\n// peu importe l'état du backend\nawait page.route('**/api/usuarios', route => route.fulfill({ body: '[...]' }));\nawait page.goto('/usuarios');"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice — Simulez une erreur du serveur",
+        "taskHtml": "Utilisez <code>page.route()</code> pour intercepter <code>**/api/pedido</code> et répondre avec le status <code>500</code>. Puis naviguez vers <code>/pedido</code> et vérifiez que la page affiche le texte <strong>« Une erreur s'est produite »</strong>.",
+        "solution": {
+          "label": "Solution",
+          "langClass": "ts",
+          "code": "await page.route('**/api/pedido', route => route.fulfill({\n  status: 500,\n  body: 'Error interno',\n}));\n\nawait page.goto('/pedido');\nawait expect(page.getByText('Ocurrió un error')).toBeVisible();"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s17",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Que fait <code>route.fetch()</code> suivi de <code>route.fulfill({ response, body: ... })</code> dans un handler de <code>page.route()</code> ?",
+        "options": [
+          "Laisse la requête réelle atteindre le serveur, puis modifie la réponse avant de la donner à la page.",
+          "Bloque complètement la requête, sans jamais la laisser sortir.",
+          "Duplique la requête et l'envoie deux fois au serveur.",
+          "Ne fonctionne qu'avec des requêtes de type GET, jamais avec POST."
+        ],
+        "answerIndex": 0,
+        "explanationHtml": "<code>route.fetch()</code> exécute la requête originale et vous donne la réponse réelle ; à partir de là, vous pouvez la lire, la modifier (par exemple ajouter un élément à la liste) et la transmettre à la page avec <code>fulfill()</code> — contrairement à <code>route.fulfill()</code> direct, qui ne touche jamais le serveur."
+      }
+    ]
   }
 ];
