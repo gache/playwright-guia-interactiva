@@ -103,3 +103,5 @@ export interface Exercise {
   hint: string;
   solution: string;
 }
+
+export type Locale = 'es' | 'fr';
