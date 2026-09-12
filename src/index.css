@@ -888,3 +888,35 @@
 #sidebar .hidden-group {
   display: none;
 }
+
+/* LanguageSwitcher */
+.page-head { position: relative; }
+.lang-switcher {
+  display: flex;
+  gap: 4px;
+  position: absolute;
+  top: 20px;
+  right: 0;
+}
+.lang-switcher-btn {
+  padding: 5px 12px;
+  border: 1px solid #2A3347;
+  border-radius: 4px;
+  background: #0D1117;
+  color: #94A3B8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.lang-switcher-btn:hover {
+  background: #1C2333;
+  color: #E2E8F0;
+  border-color: #2A3347;
+}
+.lang-switcher-btn.active {
+  background: rgba(61, 214, 140, 0.12);
+  color: #3DD68C;
+  border-color: rgba(61, 214, 140, 0.35);
+}

@@ -11,6 +11,7 @@ import { useActiveSection } from './hooks/useActiveSection';
 import { useLocale } from './context/LocaleContext';
 import { getSections, getExercises, getGlossaryTerms, getRoadmapStages } from './data';
 import { strings } from './data/strings';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
 
 const QUIZ_TOTAL = 29;
 
@@ -127,6 +128,7 @@ export default function App() {
       />
       <main id="main-content" className={sidebarCollapsed ? 'sidebar-collapsed' : ''}>
         <header className="page-head">
+          <LanguageSwitcher />
           <div className="page-head-badge">{t.pageHeadBadge}</div>
           <h1>
             {t.headTitlePrefix} <em>Playwright</em><br />

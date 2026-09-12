@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import type { Section } from '../types';
 import { useLocale } from '../context/LocaleContext';
 import { strings } from '../data/strings';
-import { LanguageSwitcher } from './LanguageSwitcher';
 
 const DIFF_ORDER: NonNullable<Section['difficulty']>[] = ['beginner', 'intermediate', 'advanced'];
 const DIFF_SUFFIX: Record<NonNullable<Section['difficulty']>, string> = {
@@ -81,7 +80,6 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
         >
           {collapsed ? '›' : '‹'}
         </button>
-        {!collapsed && <LanguageSwitcher />}
       </div>
 
       {!collapsed && (
