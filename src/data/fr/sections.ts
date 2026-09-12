@@ -64,7 +64,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "import { test, expect } from '@playwright/test';\n\ntest('flux de connexion complet', async ({ page }) => {\n  await page.goto('/login');                     // utilise baseURL de la config\n\n  await page.getByLabel('Email').fill('user@test.com');\n  await page.getByLabel('Mot de passe').fill('secret123');\n  await page.getByRole('button', { name: 'Entrer' }).click();\n\n  // Vérifier la redirection vers le dashboard\n  await expect(page).toHaveURL(/dashboard/);\n  await expect(page.getByText('Bienvenue')).toBeVisible();\n});"
+          "code": "import { test, expect } from '@playwright/test';\n\ntest('flujo de login completo', async ({ page }) => {\n  await page.goto('/login');                     // utilise baseURL de la config\n\n  await page.getByLabel('Email').fill('user@test.com');\n  await page.getByLabel('Contraseña').fill('secret123');\n  await page.getByRole('button', { name: 'Entrar' }).click();\n\n  // Vérifier la redirection vers le dashboard\n  await expect(page).toHaveURL(/dashboard/);\n  await expect(page.getByText('Bienvenido')).toBeVisible();\n});"
         }
       },
       {
@@ -102,7 +102,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "import { chromium } from '@playwright/test';\n\nconst browser = await chromium.launch({\n  headless: false,   // true = sans fenêtre visible\n  slowMo: 50,         // ms de pause entre les actions (utile pour déboguer)\n});\n\nconst context = await browser.newContext({\n  ignoreHTTPSErrors: true,\n  viewport: { width: 1280, height: 720 },\n  locale: 'fr-FR',\n  storageState: './auth.json',  // session enregistrée précédemment\n});\n\nconst page = await context.newPage();\nawait page.goto('https://mon-app.com');\n\nawait context.close();\nawait browser.close();"
+          "code": "import { chromium } from '@playwright/test';\n\nconst browser = await chromium.launch({\n  headless: false,   // true = sans fenêtre visible\n  slowMo: 50,         // ms de pause entre les actions (utile pour déboguer)\n});\n\nconst context = await browser.newContext({\n  ignoreHTTPSErrors: true,\n  viewport: { width: 1280, height: 720 },\n  locale: 'es-MX',\n  storageState: './auth.json',  // session enregistrée précédemment\n});\n\nconst page = await context.newPage();\nawait page.goto('https://mi-app.com');\n\nawait context.close();\nawait browser.close();"
         }
       },
       {
@@ -146,7 +146,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "await page.goto('https://mon-app.com/produits');\nawait page.goto('/dashboard');                    // relative à baseURL\n\nawait page.goBack();\nawait page.goForward();\nawait page.reload();\n\n// Attendre que l'URL change (après login, redirect…)\nawait page.waitForURL('**/dashboard');    // motif glob\nawait page.waitForURL(/\\/dashboard/);    // regex\n\n// Attendre des états de chargement\nawait page.waitForLoadState('load');\nawait page.waitForLoadState('domcontentloaded');\nawait page.waitForLoadState('networkidle');  // réseau inactif ≥500ms"
+          "code": "await page.goto('https://mi-app.com/productos');\nawait page.goto('/dashboard');                    // relative à baseURL\n\nawait page.goBack();\nawait page.goForward();\nawait page.reload();\n\n// Attendre que l'URL change (après login, redirect…)\nawait page.waitForURL('**/dashboard');    // motif glob\nawait page.waitForURL(/\\/dashboard/);    // regex\n\n// Attendre des états de chargement\nawait page.waitForLoadState('load');\nawait page.waitForLoadState('domcontentloaded');\nawait page.waitForLoadState('networkidle');  // réseau inactif ≥500ms"
         }
       },
       {
@@ -184,7 +184,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript — Tous les types",
           "langClass": "ts",
-          "code": "// ── CSS / XPath ──────────────────────────────────────\npage.locator('button.submit')\npage.locator('#form input[type=\"email\"]')\n\n// ── ✅ Sémantiques (préférés) ───────────────────────\npage.getByRole('button', { name: 'Envoyer' })\npage.getByRole('textbox', { name: 'Email' })\npage.getByRole('link', { name: 'Accueil' })\npage.getByLabel('Mot de passe')\npage.getByPlaceholder('Écrivez votre email')\npage.getByText('Bienvenue')\npage.getByText(/bienvenue/i)           // regex, insensible à la casse\npage.getByAltText('Logo entreprise')\npage.getByTestId('submit-btn')          // data-testid\n\n// ── Filtrer et chaîner ──────────────────────────────\npage.locator('.card').filter({ hasText: 'Disponible' })\npage.locator('li').nth(2)               // troisième élément\npage.locator('li').first()\npage.locator('li').last()\n\n// ── Tous les éléments ──────────────────────────────\nconst items  = await page.locator('li').all();\nconst textos = await page.locator('li').allTextContents();\nconst total  = await page.locator('li').count();\n\n// ── État ───────────────────────────────────────────\nconst visible = await page.locator('#modal').isVisible();\nconst enabled = await page.locator('button').isEnabled();"
+          "code": "// ── CSS / XPath ──────────────────────────────────────\npage.locator('button.submit')\npage.locator('#form input[type=\"email\"]')\n\n// ── ✅ Sémantiques (préférés) ───────────────────────\npage.getByRole('button', { name: 'Enviar' })\npage.getByRole('textbox', { name: 'Email' })\npage.getByRole('link', { name: 'Inicio' })\npage.getByLabel('Contraseña')\npage.getByPlaceholder('Escribe tu email')\npage.getByText('Bienvenido')\npage.getByText(/bienvenido/i)           // regex, insensible à la casse\npage.getByAltText('Logo empresa')\npage.getByTestId('submit-btn')          // data-testid\n\n// ── Filtrer et chaîner ──────────────────────────────\npage.locator('.card').filter({ hasText: 'Disponible' })\npage.locator('li').nth(2)               // troisième élément\npage.locator('li').first()\npage.locator('li').last()\n\n// ── Tous les éléments ──────────────────────────────\nconst items  = await page.locator('li').all();\nconst textos = await page.locator('li').allTextContents();\nconst total  = await page.locator('li').count();\n\n// ── État ───────────────────────────────────────────\nconst visible = await page.locator('#modal').isVisible();\nconst enabled = await page.locator('button').isEnabled();"
         }
       },
       {
@@ -200,7 +200,7 @@ export const sections: Section[] = [
         "solution": {
           "label": "Solution",
           "langClass": "ts",
-          "code": "// Champ de texte — 3 façons\npage.getByLabel('Utilisateur')                       // ✅ meilleure option\npage.getByPlaceholder('Votre nom d\\'utilisateur')     // ✅ également valide\npage.getByRole('textbox', { name: 'Utilisateur' })   // ✅ sémantique\n\n// Bouton\npage.getByRole('button', { name: 'Créer un compte' })   // ✅ le meilleur choix\npage.getByText('Créer un compte')                       // fonctionne mais moins précis"
+          "code": "// Champ de texte — 3 façons\npage.getByLabel('Usuario')                          // ✅ meilleure option\npage.getByPlaceholder('Tu nombre de usuario')         // ✅ également valide\npage.getByRole('textbox', { name: 'Usuario' })       // ✅ sémantique\n\n// Bouton\npage.getByRole('button', { name: 'Crear cuenta' })   // ✅ le meilleur choix\npage.getByText('Crear cuenta')                       // fonctionne mais moins précis"
         }
       },
       {
@@ -238,7 +238,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "const btn   = page.getByRole('button', { name: 'Envoyer' });\nconst email = page.getByLabel('Email');\n\n// Clics\nawait btn.click();\nawait btn.dblclick();\nawait btn.click({ button: 'right' });\nawait btn.click({ modifiers: ['Control'] });\n\n// Formulaires\nawait email.fill('user@correo.com');   // efface et écrit\nawait email.clear();\nawait email.type('lent', { delay: 80 }); // simule une frappe réelle\nawait email.press('Tab');\nawait page.keyboard.press('Control+A');\n\n// Checkbox / Radio\nawait page.getByLabel('Se souvenir de moi').check();\nawait page.getByLabel('Se souvenir de moi').uncheck();\n\n// Select\nawait page.getByLabel('Pays').selectOption('France');\nawait page.getByLabel('Langues').selectOption(['fr', 'en']);\n\n// Hover, focus, drag\nawait btn.hover();\nawait page.locator('#card').dragTo(page.locator('#done'));"
+          "code": "const btn   = page.getByRole('button', { name: 'Enviar' });\nconst email = page.getByLabel('Email');\n\n// Clics\nawait btn.click();\nawait btn.dblclick();\nawait btn.click({ button: 'right' });\nawait btn.click({ modifiers: ['Control'] });\n\n// Formulaires\nawait email.fill('user@correo.com');   // efface et écrit\nawait email.clear();\nawait email.type('lento', { delay: 80 }); // simule une frappe réelle\nawait email.press('Tab');\nawait page.keyboard.press('Control+A');\n\n// Checkbox / Radio\nawait page.getByLabel('Recordarme').check();\nawait page.getByLabel('Recordarme').uncheck();\n\n// Select\nawait page.getByLabel('País').selectOption('México');\nawait page.getByLabel('Idiomas').selectOption(['es', 'en']);\n\n// Hover, focus, drag\nawait btn.hover();\nawait page.locator('#card').dragTo(page.locator('#done'));"
         }
       },
       {
@@ -248,7 +248,7 @@ export const sections: Section[] = [
         "solution": {
           "label": "Solution",
           "langClass": "ts",
-          "code": "test('inscription d\\'un nouvel utilisateur', async ({ page }) => {\n  await page.goto('https://practice.expandtesting.com/register');\n\n  await page.getByLabel('Username').fill('monutilisateur');\n  await page.getByLabel('Password', { exact: true }).fill('MonMotDePasse123!');\n  await page.getByLabel('Confirm Password').fill('MonMotDePasse123!');\n  await page.getByLabel(/terms/i).check();\n  await page.getByRole('button', { name: 'Register' }).click();\n\n  await expect(page.getByText(/successfully/i)).toBeVisible();\n});"
+          "code": "test('registro de nuevo usuario', async ({ page }) => {\n  await page.goto('https://practice.expandtesting.com/register');\n\n  await page.getByLabel('Username').fill('miusuario');\n  await page.getByLabel('Password', { exact: true }).fill('MiClave123!');\n  await page.getByLabel('Confirm Password').fill('MiClave123!');\n  await page.getByLabel(/terms/i).check();\n  await page.getByRole('button', { name: 'Register' }).click();\n\n  await expect(page.getByText(/successfully/i)).toBeVisible();\n});"
         }
       },
       {
@@ -286,7 +286,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript — Assertions les plus utilisées",
           "langClass": "ts",
-          "code": "// Visibilité et état\nawait expect(locator).toBeVisible();\nawait expect(locator).toBeHidden();\nawait expect(locator).toBeEnabled();\nawait expect(locator).toBeDisabled();\nawait expect(locator).toBeChecked();\n\n// Contenu\nawait expect(locator).toHaveText('Bienvenue, Charles');  // exact\nawait expect(locator).toHaveText(/bienvenue/i);\nawait expect(locator).toContainText('Charles');\nawait expect(locator).toHaveValue('charles@email.com');\nawait expect(locator).toHaveCount(5);\n\n// Attributs et styles\nawait expect(locator).toHaveAttribute('href', '/profil');\nawait expect(locator).toHaveClass('btn-active');\nawait expect(locator).toHaveCSS('color', 'rgb(255, 0, 0)');\n\n// Page\nawait expect(page).toHaveTitle(/Dashboard/);\nawait expect(page).toHaveURL(/\\/home/);\n\n// Négation\nawait expect(locator).not.toBeVisible();\nawait expect(page).not.toHaveURL(/error/);"
+          "code": "// Visibilité et état\nawait expect(locator).toBeVisible();\nawait expect(locator).toBeHidden();\nawait expect(locator).toBeEnabled();\nawait expect(locator).toBeDisabled();\nawait expect(locator).toBeChecked();\n\n// Contenu\nawait expect(locator).toHaveText('Bienvenido, Carlos');  // exact\nawait expect(locator).toHaveText(/bienvenido/i);\nawait expect(locator).toContainText('Carlos');\nawait expect(locator).toHaveValue('carlos@email.com');\nawait expect(locator).toHaveCount(5);\n\n// Attributs et styles\nawait expect(locator).toHaveAttribute('href', '/perfil');\nawait expect(locator).toHaveClass('btn-active');\nawait expect(locator).toHaveCSS('color', 'rgb(255, 0, 0)');\n\n// Page\nawait expect(page).toHaveTitle(/Dashboard/);\nawait expect(page).toHaveURL(/\\/home/);\n\n// Négation\nawait expect(locator).not.toBeVisible();\nawait expect(page).not.toHaveURL(/error/);"
         }
       },
       {
@@ -296,7 +296,7 @@ export const sections: Section[] = [
         "solution": {
           "label": "Solution",
           "langClass": "ts",
-          "code": "await expect(page).toHaveURL(/\\/dashboard/);\nawait expect(page.getByRole('heading', { name: 'Panneau de contrôle' })).toBeVisible();\nawait expect(page.getByRole('button', { name: 'Déconnexion' })).toBeVisible();\nawait expect(page.getByRole('button', { name: 'Login' })).not.toBeVisible();"
+          "code": "await expect(page).toHaveURL(/\\/dashboard/);\nawait expect(page.getByRole('heading', { name: 'Panel de control' })).toBeVisible();\nawait expect(page.getByRole('button', { name: 'Cerrar sesión' })).toBeVisible();\nawait expect(page.getByRole('button', { name: 'Login' })).not.toBeVisible();"
         }
       },
       {
@@ -334,7 +334,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "// Attendre qu'un spinner disparaisse et que le résultat apparaisse\nawait page.locator('.spinner').waitFor({ state: 'hidden' });\nawait page.locator('.resultat').waitFor({ state: 'visible' });\n// États : 'visible' | 'hidden' | 'attached' | 'detached'\n\n// Attendre un changement d'URL (après submit de formulaire)\nawait page.waitForURL('**/confirmation', { timeout: 15000 });\n\n// Attendre une condition personnalisée (polling)\nawait page.waitForFunction(() =>\n  document.querySelectorAll('.produit').length >= 10\n);\n\n// Attendre une réponse réseau + action en simultané\nconst [response] = await Promise.all([\n  page.waitForResponse('**/api/produits'),\n  page.getByRole('button', { name: 'Charger plus' }).click(),\n]);\nconst data = await response.json();"
+          "code": "// Attendre qu'un spinner disparaisse et que le résultat apparaisse\nawait page.locator('.spinner').waitFor({ state: 'hidden' });\nawait page.locator('.resultado').waitFor({ state: 'visible' });\n// États : 'visible' | 'hidden' | 'attached' | 'detached'\n\n// Attendre un changement d'URL (après submit de formulaire)\nawait page.waitForURL('**/confirmacion', { timeout: 15000 });\n\n// Attendre une condition personnalisée (polling)\nawait page.waitForFunction(() =>\n  document.querySelectorAll('.producto').length >= 10\n);\n\n// Attendre une réponse réseau + action en simultané\nconst [response] = await Promise.all([\n  page.waitForResponse('**/api/productos'),\n  page.getByRole('button', { name: 'Cargar más' }).click(),\n]);\nconst data = await response.json();"
         }
       },
       {
