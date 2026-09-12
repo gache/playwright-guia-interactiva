@@ -1,4 +1,4 @@
-import type { RoadmapStage } from '../types';
+import type { RoadmapStage } from '../../types';
 
 export const roadmapStages: RoadmapStage[] = [
   {

@@ -8,10 +8,10 @@ import { Exercises } from './components/Exercises';
 import { useProgress } from './hooks/useProgress';
 import { useScrollProgress } from './hooks/useScrollProgress';
 import { useActiveSection } from './hooks/useActiveSection';
-import { sections } from './data/sections';
-import { roadmapStages } from './data/roadmap';
-import { glossaryTerms } from './data/glossary';
-import { exercises } from './data/exercises';
+import { sections } from './data/es/sections';
+import { roadmapStages } from './data/es/roadmap';
+import { glossaryTerms } from './data/es/glossary';
+import { exercises } from './data/es/exercises';
 
 const QUIZ_TOTAL = 29;
 

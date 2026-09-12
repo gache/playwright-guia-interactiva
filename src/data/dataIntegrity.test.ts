@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { sections } from './sections';
-import { roadmapStages } from './roadmap';
-import { glossaryTerms } from './glossary';
+import { sections } from './es/sections';
+import { roadmapStages } from './es/roadmap';
+import { glossaryTerms } from './es/glossary';
 
 describe('extracted guide data', () => {
   it('has exactly 31 sections in order s1..s31', () => {

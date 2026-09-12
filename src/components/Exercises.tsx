@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Exercise } from '../data/exercises';
+import type { Exercise } from '../types';
 
 const DIFF_LABEL: Record<Exercise['difficulty'], string> = {
   beginner: '🟢 Principiante',
