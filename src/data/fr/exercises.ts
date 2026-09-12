@@ -403,6 +403,816 @@ test('capture d\'écran d\'un élément', async ({ page }) => {
 });`,
   },
 
+  // ─────────────────────────── AVANCÉ ──────────────────────────────────────
+  {
+    id: 'ej-a01',
+    num: 'A01',
+    title: 'Authentification persistante avec storageState',
+    difficulty: 'advanced',
+    description:
+      'Créez un `globalSetup` qui effectue le login une seule fois et sauvegarde l\'état d\'authentification sur disque. Tous les tests du projet réutilisent cet état sans répéter le login.',
+    hint: 'Dans `globalSetup`, utilisez `browser.newPage()`, effectuez le login, appelez `context.storageState({ path })`. Configurez `storageState` dans `playwright.config.ts`.',
+    solution: `// global-setup.ts
+import { chromium } from '@playwright/test';
+
+export default async function globalSetup() {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  // Utiliser practice.expandtesting.com — inscrivez un utilisateur avant d'exécuter ce setup
+  await page.goto('https://practice.expandtesting.com/login');
+  await page.getByPlaceholder('Email').fill('tu-email@test.com');
+  await page.getByPlaceholder('Password').fill('Tu1234!');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.waitForURL('https://practice.expandtesting.com/notes');
+  await page.context().storageState({ path: 'auth.json' });
+  await browser.close();
+}
+
+// playwright.config.ts
+export default {
+  globalSetup: './global-setup.ts',
+  use: { storageState: 'auth.json' },
+  // Tous les tests démarrent déjà authentifiés sur /notes
+};`,
+  },
+  {
+    id: 'ej-a02',
+    num: 'A02',
+    title: 'Page Object Model complet avec héritage',
+    difficulty: 'advanced',
+    description:
+      'Implémentez un POM complet avec : `BasePage` (méthodes communes), `LoginPage extends BasePage`, `DashboardPage extends BasePage`. Écrivez des tests E2E qui utilisent les trois classes.',
+    hint: 'La `BasePage` stocke `this.page` et définit des helpers comme `waitForToast()`. Les pages filles définissent leurs locators comme propriétés.',
+    solution: `import { Page, expect } from '@playwright/test';
+
+class BasePage {
+  constructor(protected page: Page) {}
+  async waitForToast(msg: string) {
+    await expect(this.page.locator('.toast')).toContainText(msg);
+  }
+}
+
+class LoginPage extends BasePage {
+  readonly emailInput = this.page.getByLabel('Email');
+  readonly passwordInput = this.page.getByLabel('Password');
+  readonly submitBtn = this.page.getByRole('button', { name: 'Login' });
+
+  async goto() { await this.page.goto('https://practice.expandtesting.com/login'); }
+  async login(email: string, pass: string) {
+    await this.emailInput.fill(email);
+    await this.passwordInput.fill(pass);
+    await this.submitBtn.click();
+  }
+}
+
+class NotesPage extends BasePage {
+  readonly heading = this.page.getByRole('heading', { name: /notes/i });
+  readonly addNoteBtn = this.page.getByRole('button', { name: /add note|new note|\+/i });
+  async isLoaded() { return this.heading.isVisible(); }
+}
+
+// test
+import { test } from '@playwright/test';
+test('login E2E avec POM sur practice.expandtesting.com', async ({ page }) => {
+  const login = new LoginPage(page);
+  await login.goto();
+  await login.login('tu-email@test.com', 'Tu1234!');
+  await page.waitForURL('https://practice.expandtesting.com/notes');
+  const notes = new NotesPage(page);
+  expect(await notes.isLoaded()).toBe(true);
+});`,
+  },
+  {
+    id: 'ej-a03',
+    num: 'A03',
+    title: 'Sharding de tests pour CI parallèle',
+    difficulty: 'advanced',
+    description:
+      'Configurez votre projet pour exécuter les tests en 4 shards parallèles en CI. Écrivez le pipeline GitHub Actions qui combine les rapports de tous les shards.',
+    hint: 'Utilisez `--shard=1/4`, `--shard=2/4`, etc. En CI, utilisez la strategy matrix de GitHub Actions. Combinez avec `merge-reports`.',
+    solution: `# .github/workflows/playwright.yml
+name: Playwright Tests
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npx playwright test --shard=\${{ matrix.shard }}/4
+        env:
+          CI: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-\${{ matrix.shard }}
+          path: blob-report/
+
+  merge-reports:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+      - run: npx playwright merge-reports --reporter html ./all-blob-reports`,
+  },
+  {
+    id: 'ej-a04',
+    num: 'A04',
+    title: 'Mock complet d\'API avec HAR recording',
+    difficulty: 'advanced',
+    description:
+      'Enregistrez les requêtes réseau de votre application dans un fichier HAR. Ensuite, rejouez ce HAR dans les tests hors ligne, sans avoir besoin du serveur réel.',
+    hint: 'Enregistrez avec `page.routeFromHAR(path, { update: true })`. Dans les tests, utilisez `page.routeFromHAR(path)` sans `update`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+// Étape 1 : enregistrer (exécuter une fois avec UPDATE_HAR=true)
+// Étape 2 : rejouer dans les tests normaux
+test('rejouer le HAR enregistré', async ({ page }) => {
+  await page.routeFromHAR('./fixtures/api-responses.har', {
+    url: '**/api/**',
+    update: false,
+  });
+
+  await page.goto('https://mi-app.ejemplo.com');
+  // L'application utilise les réponses du HAR à la place du serveur réel
+  await expect(page.getByText('Datos desde HAR')).toBeVisible();
+});
+
+// Script d'enregistrement (exécuter manuellement) :
+// npx playwright test --headed --update-snapshots
+// avec page.routeFromHAR('./fixtures/api-responses.har', { update: true })`,
+  },
+  {
+    id: 'ej-a05',
+    num: 'A05',
+    title: 'Tests d\'accessibilité avec axe-playwright',
+    difficulty: 'advanced',
+    description:
+      'Intégrez `axe-playwright` pour effectuer un audit d\'accessibilité WCAG 2.1 AA sur chaque page principale de votre application. Faites échouer le test s\'il y a des violations de sévérité "critical" ou "serious".',
+    hint: 'Installez `axe-playwright`, importez `checkA11y`, appelez-le avec `{ runOnly: { type: "tag", values: ["wcag2aa"] } }`.',
+    solution: `import { test } from '@playwright/test';
+import { checkA11y, injectAxe } from 'axe-playwright';
+
+const PAGES = ['/', '/login', '/dashboard', '/profile'];
+
+for (const path of PAGES) {
+  test(\`accessibilité WCAG 2.1 AA — \${path}\`, async ({ page }) => {
+    await page.goto(\`https://mi-app.ejemplo.com\${path}\`);
+    await injectAxe(page);
+    await checkA11y(page, undefined, {
+      detailedReport: true,
+      detailedReportOptions: { html: true },
+      axeOptions: {
+        runOnly: { type: 'tag', values: ['wcag2aa', 'wcag2a'] },
+      },
+      violationFilters: [{ severity: ['critical', 'serious'] }],
+    });
+  });
+}`,
+  },
+  {
+    id: 'ej-a06',
+    num: 'A06',
+    title: 'Simuler des conditions réseau lentes',
+    difficulty: 'advanced',
+    description:
+      'Simulez une connexion 3G lente (750 kbps, latence 100 ms). Vérifiez que la page affiche un skeleton/loader pendant le chargement et que l\'application reste utilisable.',
+    hint: 'Utilisez `page.emulateNetworkConditions({ offline: false, downloadThroughput: ..., uploadThroughput: ..., latency: ... })`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('UI avec réseau 3G lent', async ({ page }) => {
+  // Simuler une connexion 3G standard
+  const cdpSession = await page.context().newCDPSession(page);
+  await cdpSession.send('Network.emulateNetworkConditions', {
+    offline: false,
+    downloadThroughput: (750 * 1024) / 8,  // 750 kbps
+    uploadThroughput: (250 * 1024) / 8,    // 250 kbps
+    latency: 100,
+  });
+
+  await page.goto('https://mi-app.ejemplo.com');
+
+  // Le skeleton doit apparaître pendant le chargement
+  const skeleton = page.locator('.skeleton');
+  // Peut apparaître brièvement — on ne capture pas toujours l'état intermédiaire
+
+  // L'application doit finir par se charger
+  await expect(page.getByRole('main')).toBeVisible({ timeout: 30_000 });
+});`,
+  },
+  {
+    id: 'ej-a07',
+    num: 'A07',
+    title: 'Tests avec plusieurs utilisateurs simultanés',
+    difficulty: 'advanced',
+    description:
+      'Simulez une collaboration en temps réel : l\'utilisateur A et l\'utilisateur B ouvrent la même page. A écrit quelque chose et B vérifie qu\'il le voit en temps réel (WebSocket/polling).',
+    hint: 'Utilisez `browser.newContext()` pour créer deux contextes indépendants, chacun avec son propre utilisateur authentifié.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('collaboration en temps réel', async ({ browser }) => {
+  // Créer deux sessions indépendantes
+  const ctxA = await browser.newContext({ storageState: 'auth-userA.json' });
+  const ctxB = await browser.newContext({ storageState: 'auth-userB.json' });
+  const pageA = await ctxA.newPage();
+  const pageB = await ctxB.newPage();
+
+  await pageA.goto('https://mi-app.ejemplo.com/doc/123');
+  await pageB.goto('https://mi-app.ejemplo.com/doc/123');
+
+  // L'utilisateur A écrit
+  await pageA.getByRole('textbox').fill('Hola desde A');
+
+  // L'utilisateur B voit la mise à jour
+  await expect(pageB.getByText('Hola desde A')).toBeVisible({ timeout: 5_000 });
+
+  await ctxA.close();
+  await ctxB.close();
+});`,
+  },
+  {
+    id: 'ej-a08',
+    num: 'A08',
+    title: 'Intercepter et modifier des réponses GraphQL',
+    difficulty: 'advanced',
+    description:
+      'Interceptez une mutation GraphQL spécifique. Modifiez la réponse pour simuler une erreur serveur et vérifiez que l\'interface affiche le message d\'erreur correct.',
+    hint: 'Utilisez `page.route("**/graphql", ...)` et dans le handler inspectez `request.postDataJSON()` pour identifier l\'opération.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('simuler une erreur dans une mutation GraphQL', async ({ page }) => {
+  await page.route('**/graphql', async (route, request) => {
+    const body = request.postDataJSON();
+
+    if (body?.operationName === 'CreateUser') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          errors: [{ message: 'Email ya está en uso', extensions: { code: 'DUPLICATE_EMAIL' } }],
+        }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+
+  await page.goto('https://mi-app-graphql.ejemplo.com/register');
+  await page.getByLabel('Email').fill('existente@test.com');
+  await page.getByRole('button', { name: 'Registrarse' }).click();
+  await expect(page.getByRole('alert')).toContainText('Email ya está en uso');
+});`,
+  },
+  {
+    id: 'ej-a09',
+    num: 'A09',
+    title: 'Test retry et analyse de flakiness',
+    difficulty: 'advanced',
+    description:
+      'Configurez `retries: 2` dans le projet. Écrivez un test qui simule la flakiness avec un compteur global. Vérifiez que le mécanisme de retry fonctionne et que le test réussit éventuellement.',
+    hint: 'Dans `playwright.config.ts`, `retries: 2`. Utilisez `test.info().retry` dans le test pour savoir à quelle tentative vous êtes.',
+    solution: `// playwright.config.ts
+export default {
+  retries: 2,
+  reporter: [['html'], ['list']],
+};
+
+// flaky.test.ts
+import { test, expect } from '@playwright/test';
+
+let callCount = 0;
+
+test('test avec retry (échoue 2 fois, réussit au 3e)', async ({ page }) => {
+  callCount++;
+  console.log(\`Intento \${test.info().retry + 1}\`);
+
+  if (callCount < 3) {
+    // Simuler un échec (dans les vrais tests ce serait une condition de course)
+    throw new Error(\`Fallo intencional en intento \${callCount}\`);
+  }
+
+  await page.goto('https://playwright.dev');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+});`,
+  },
+  {
+    id: 'ej-a10',
+    num: 'A10',
+    title: 'WebSocket : vérifier les messages en temps réel',
+    difficulty: 'advanced',
+    description:
+      'Utilisez le CDP (Chrome DevTools Protocol) pour surveiller les frames d\'un WebSocket. Vérifiez que l\'application reçoit le message attendu du serveur.',
+    hint: 'Utilisez `page.on("websocket", ws => ws.on("framesent"/"framereceived", ...))` pour surveiller les WebSockets.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('surveiller les messages WebSocket', async ({ page }) => {
+  const wsMessages: string[] = [];
+
+  page.on('websocket', ws => {
+    ws.on('framereceived', frame => {
+      if (typeof frame.payload === 'string') {
+        wsMessages.push(frame.payload);
+      }
+    });
+  });
+
+  await page.goto('https://mi-app-ws.ejemplo.com');
+  // Attendre l'arrivée d'un message spécifique
+  await page.waitForFunction(
+    () => (window as any).__wsReceived,
+    { timeout: 10_000 }
+  );
+
+  expect(wsMessages.some(msg => msg.includes('connected'))).toBe(true);
+});`,
+  },
+  {
+    id: 'ej-a11',
+    num: 'A11',
+    title: 'Rapport HTML personnalisé avec métadonnées',
+    difficulty: 'advanced',
+    description:
+      'Créez un reporter personnalisé qui étend `Reporter` de Playwright. Générez un JSON avec les métriques de chaque test : durée, tentatives, statut, et une capture d\'écran de l\'échec si elle existe.',
+    hint: 'Implémentez la classe avec `onTestEnd(test, result)`. Sauvegardez un `result.attachments` pour les captures d\'écran en cas d\'échec.',
+    solution: `import { Reporter, TestCase, TestResult, FullConfig } from '@playwright/test/reporter';
+import fs from 'fs';
+
+class MetricsReporter implements Reporter {
+  private results: object[] = [];
+
+  onTestEnd(test: TestCase, result: TestResult) {
+    const failureScreenshot = result.attachments.find(
+      a => a.name === 'screenshot' && result.status !== 'passed'
+    );
+
+    this.results.push({
+      title: test.title,
+      file: test.location.file,
+      duration: result.duration,
+      status: result.status,
+      retries: result.retry,
+      failureScreenshot: failureScreenshot?.path ?? null,
+      errors: result.errors.map(e => e.message),
+    });
+  }
+
+  onEnd() {
+    fs.writeFileSync(
+      'test-metrics.json',
+      JSON.stringify(this.results, null, 2)
+    );
+    console.log(\`Reporte guardado: test-metrics.json (\${this.results.length} tests)\`);
+  }
+}
+
+export default MetricsReporter;
+// Dans playwright.config.ts : reporter: [['./metrics-reporter.ts']]`,
+  },
+  {
+    id: 'ej-a12',
+    num: 'A12',
+    title: 'Locators avancés avec filter et nth',
+    difficulty: 'advanced',
+    description:
+      'Étant donné une liste de cartes de produits avec prix et bouton "Agregar", utilisez des locators enchaînés pour trouver la carte la moins chère (premier élément après le tri) et cliquer sur son bouton.',
+    hint: 'Enchaînez `.filter({ has: locator })` et `.nth(0)`. Ou filtrez par `hasText` pour trouver le prix minimum après l\'avoir extrait.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('ajouter le produit le moins cher', async ({ page }) => {
+  await page.goto('https://mi-tienda.ejemplo.com/productos');
+
+  // Trier par prix croissant
+  await page.getByRole('combobox', { name: /ordenar/i }).selectOption('price-asc');
+  await page.waitForLoadState('networkidle');
+
+  // Le premier dans la liste est le moins cher
+  const tarjetas = page.locator('.product-card');
+  const primeraTarjeta = tarjetas.first();
+
+  const precio = await primeraTarjeta.locator('.price').textContent();
+  await primeraTarjeta.getByRole('button', { name: /agregar/i }).click();
+
+  await expect(page.locator('.cart-count')).toHaveText('1');
+  await expect(page.locator('.cart-summary')).toContainText(precio!.trim());
+});`,
+  },
+  {
+    id: 'ej-a13',
+    num: 'A13',
+    title: 'Performance : mesurer les métriques Web Vitals',
+    difficulty: 'advanced',
+    description:
+      'Mesurez le LCP (Largest Contentful Paint) et le CLS (Cumulative Layout Shift) de votre page d\'accueil. Faites échouer le test si LCP > 2500 ms ou CLS > 0.1.',
+    hint: 'Utilisez `page.evaluate()` avec `PerformanceObserver` ou `performance.getEntriesByType()` pour obtenir les métriques.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('Web Vitals : LCP et CLS', async ({ page }) => {
+  await page.goto('https://mi-app.ejemplo.com', { waitUntil: 'networkidle' });
+
+  const vitals = await page.evaluate(async () => {
+    return new Promise<{ lcp: number; cls: number }>(resolve => {
+      let lcp = 0, cls = 0;
+      new PerformanceObserver(list => {
+        lcp = list.getEntries().at(-1)?.startTime ?? 0;
+      }).observe({ type: 'largest-contentful-paint', buffered: true });
+
+      new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) {
+          cls += (entry as any).value;
+        }
+      }).observe({ type: 'layout-shift', buffered: true });
+
+      setTimeout(() => resolve({ lcp, cls }), 2000);
+    });
+  });
+
+  console.log('LCP:', vitals.lcp, 'CLS:', vitals.cls);
+  expect(vitals.lcp).toBeLessThan(2500);
+  expect(vitals.cls).toBeLessThan(0.1);
+});`,
+  },
+  {
+    id: 'ej-a14',
+    num: 'A14',
+    title: 'Créer un helper de test réutilisable',
+    difficulty: 'advanced',
+    description:
+      'Créez un helper `createUser(page, overrides?)` qui remplit et envoie le formulaire d\'inscription avec des données aléatoires. Il accepte des overrides optionnels pour personnaliser les champs. Il retourne les données de l\'utilisateur créé.',
+    hint: 'Utilisez une bibliothèque comme `@faker-js/faker` pour des données aléatoires. Le helper retourne l\'objet avec les données utilisées.',
+    solution: `import { Page } from '@playwright/test';
+
+interface UserData {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export async function createUser(page: Page, overrides: Partial<UserData> = {}): Promise<UserData> {
+  const timestamp = Date.now();
+  const userData: UserData = {
+    name: overrides.name ?? \`Test User \${timestamp}\`,
+    email: overrides.email ?? \`user\${timestamp}@test.ejemplo.com\`,
+    password: overrides.password ?? 'TestPassword123!',
+  };
+
+  await page.goto('/register');
+  await page.getByLabel('Nombre').fill(userData.name);
+  await page.getByLabel('Email').fill(userData.email);
+  await page.getByLabel('Contraseña').fill(userData.password);
+  await page.getByRole('button', { name: 'Registrarse' }).click();
+  await page.waitForURL(/dashboard/);
+
+  return userData;
+}
+
+// Utilisation dans un test :
+// const user = await createUser(page, { name: 'Admin Especial' });
+// expect(user.email).toContain('@test.ejemplo.com');`,
+  },
+  {
+    id: 'ej-a15',
+    num: 'A15',
+    title: 'Test de PWA : hors ligne et service worker',
+    difficulty: 'advanced',
+    description:
+      'Vérifiez que votre PWA fonctionne hors ligne. Chargez l\'application, activez le mode hors ligne avec CDP, rechargez la page et vérifiez que le service worker sert le contenu mis en cache.',
+    hint: 'Activez le mode hors ligne avec `cdp.send("Network.emulateNetworkConditions", { offline: true, ... })` après le premier chargement.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('PWA fonctionne hors ligne', async ({ page, context }) => {
+  // 1. Charger l'application et attendre que le SW s'installe
+  await page.goto('https://mi-pwa.ejemplo.com');
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+
+  // 2. Activer le mode hors ligne
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Network.emulateNetworkConditions', {
+    offline: true,
+    downloadThroughput: 0,
+    uploadThroughput: 0,
+    latency: 0,
+  });
+
+  // 3. Recharger et vérifier que le SW sert le cache
+  await page.reload();
+  await expect(page.getByRole('main')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('Sin conexión')).not.toBeVisible();
+
+  // 4. Revenir en ligne
+  await cdp.send('Network.emulateNetworkConditions', {
+    offline: false, downloadThroughput: -1, uploadThroughput: -1, latency: 0,
+  });
+});`,
+  },
+  {
+    id: 'ej-a16',
+    num: 'A16',
+    title: 'Playwright component testing (expérimental)',
+    difficulty: 'advanced',
+    description:
+      'Utilisez Playwright Component Testing pour monter un composant React isolé. Vérifiez ses props, son état et ses événements sans avoir à démarrer toute l\'application.',
+    hint: 'Installez `@playwright/experimental-ct-react`. Les tests utilisent `mount()` du package spécial.',
+    solution: `// button.test.tsx (ct)
+import { test, expect } from '@playwright/experimental-ct-react';
+import { Button } from './Button';
+
+test('Button s\'affiche avec texte et déclenche onClick', async ({ mount }) => {
+  let clicked = false;
+  const component = await mount(
+    <Button label="Guardar" onClick={() => { clicked = true; }} />
+  );
+
+  await expect(component).toContainText('Guardar');
+  await component.click();
+  expect(clicked).toBe(true);
+});
+
+test('Button désactivé ne déclenche pas onClick', async ({ mount }) => {
+  let clicked = false;
+  const component = await mount(
+    <Button label="Guardar" disabled onClick={() => { clicked = true; }} />
+  );
+
+  await expect(component).toBeDisabled();
+  await component.click({ force: true });
+  expect(clicked).toBe(false);
+});`,
+  },
+  {
+    id: 'ej-a17',
+    num: 'A17',
+    title: 'Modifier les en-têtes de requêtes',
+    difficulty: 'advanced',
+    description:
+      'Interceptez toutes les requêtes vers votre API et injectez un en-tête d\'authentification personnalisé (`X-API-Key`). Vérifiez que les requêtes arrivent avec l\'en-tête correct.',
+    hint: 'Dans `page.route()`, utilisez `route.continue({ headers: { ...request.headers(), "X-API-Key": "valeur" } })`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('injecter un en-tête d\'authentification', async ({ page }) => {
+  const capturedHeaders: Record<string, string>[] = [];
+
+  await page.route('**/api/**', async (route, request) => {
+    const headers = { ...request.headers(), 'X-API-Key': 'mi-api-key-secreta' };
+    capturedHeaders.push(headers);
+    await route.continue({ headers });
+  });
+
+  await page.goto('https://mi-app.ejemplo.com');
+  await page.waitForLoadState('networkidle');
+
+  const apiRequests = capturedHeaders.filter(h => h['x-api-key']);
+  expect(apiRequests.length).toBeGreaterThan(0);
+  expect(apiRequests[0]['x-api-key']).toBe('mi-api-key-secreta');
+});`,
+  },
+  {
+    id: 'ej-a18',
+    num: 'A18',
+    title: 'Utilisation avancée de expect.poll',
+    difficulty: 'advanced',
+    description:
+      'Utilisez `expect.poll()` pour vérifier l\'état d\'une longue opération asynchrone qui ne se reflète pas directement dans le DOM. Interrogez les appels API toutes les 500 ms jusqu\'à obtenir le résultat attendu.',
+    hint: '`expect.poll(async () => { return await page.evaluate(...); }, { intervals: [500], timeout: 15000 })`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('attendre le résultat avec expect.poll', async ({ page }) => {
+  await page.goto('https://mi-app.ejemplo.com/jobs');
+
+  // Déclencher un job long
+  await page.getByRole('button', { name: 'Iniciar proceso' }).click();
+
+  const jobId = await page.getByTestId('job-id').textContent();
+
+  // Attendre que le job se termine en vérifiant l'API périodiquement
+  await expect.poll(
+    async () => {
+      const response = await page.evaluate(async (id) => {
+        const res = await fetch(\`/api/jobs/\${id}/status\`);
+        return res.json();
+      }, jobId);
+      return response.status;
+    },
+    { intervals: [500, 1000, 2000], timeout: 30_000, message: 'El job no completó a tiempo' }
+  ).toBe('completed');
+});`,
+  },
+  {
+    id: 'ej-a19',
+    num: 'A19',
+    title: 'Pipeline CI/CD complet avec cache',
+    difficulty: 'advanced',
+    description:
+      'Écrivez un workflow complet GitHub Actions pour Playwright avec : cache des navigateurs, matrice de navigateurs (chromium/firefox/webkit), artifacts avec rapports HTML, et notification Slack en cas d\'échec.',
+    hint: 'Mettez en cache le dossier `~/.cache/ms-playwright`. Les artifacts vont dans le répertoire `playwright-report/`. Le webhook Slack va dans les secrets.',
+    solution: `# .github/workflows/playwright.yml
+name: E2E Tests
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-\${{ matrix.browser }}-\${{ hashFiles('package-lock.json') }}
+
+      - name: Install browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps \${{ matrix.browser }}
+
+      - name: Install system deps
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps \${{ matrix.browser }}
+
+      - name: Run tests
+        run: npx playwright test --project=\${{ matrix.browser }}
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-\${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {"text": "Playwright \${{ matrix.browser }} falló en \${{ github.ref_name }} — ver: \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}"}
+        env:
+          SLACK_WEBHOOK_URL: \${{ secrets.SLACK_WEBHOOK_URL }}`,
+  },
+  {
+    id: 'ej-a20',
+    num: 'A20',
+    title: 'Implémenter un test runner personnalisé avec phases',
+    difficulty: 'advanced',
+    description:
+      'Créez un helper `runScenario(page, steps)` où `steps` est un tableau de fonctions nommées. Exécutez chaque step, mesurez sa durée et générez un rapport structuré à la fin.',
+    hint: 'Chaque step est `{ name: string, run: (page) => Promise<void> }`. Capturez `Date.now()` avant et après chacun.',
+    solution: `import { Page } from '@playwright/test';
+
+interface Step {
+  name: string;
+  run: (page: Page) => Promise<void>;
+}
+
+interface StepResult {
+  name: string;
+  status: 'passed' | 'failed';
+  duration: number;
+  error?: string;
+}
+
+export async function runScenario(page: Page, steps: Step[]): Promise<StepResult[]> {
+  const results: StepResult[] = [];
+
+  for (const step of steps) {
+    const start = Date.now();
+    try {
+      await step.run(page);
+      results.push({ name: step.name, status: 'passed', duration: Date.now() - start });
+    } catch (err) {
+      results.push({
+        name: step.name, status: 'failed',
+        duration: Date.now() - start,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      break; // ou continuer avec \`continue\` si vous voulez toutes les étapes
+    }
+  }
+
+  const total = results.reduce((s, r) => s + r.duration, 0);
+  const failed = results.filter(r => r.status === 'failed');
+  console.table(results.map(r => ({ ...r, duration: \`\${r.duration}ms\` })));
+  console.log(\`Total: \${total}ms | Passed: \${results.length - failed.length} | Failed: \${failed.length}\`);
+
+  return results;
+}
+
+// Utilisation dans un test :
+// const results = await runScenario(page, [
+//   { name: 'Login', run: async p => { await p.goto('/login'); ... } },
+//   { name: 'Ver dashboard', run: async p => { await expect(p.getByText('Home')).toBeVisible(); } },
+// ]);
+// expect(results.every(r => r.status === 'passed')).toBe(true);`,
+  },
+  {
+    id: 'ej-a21',
+    num: 'A21',
+    title: 'Vérifier le SEO et les méta-tags',
+    difficulty: 'advanced',
+    description:
+      'Écrivez un test qui vérifie les méta-tags SEO critiques de chaque page : `title`, `description`, `og:title`, `og:image`, `canonical`. Utilisez un fixture qui itère sur les pages du sitemap.',
+    hint: 'Utilisez `page.locator("meta[name=description]").getAttribute("content")` pour lire les méta-tags.',
+    solution: `import { test, expect } from '@playwright/test';
+
+const PAGES = [
+  { url: '/', minTitleLen: 20, hasOG: true },
+  { url: '/blog', minTitleLen: 10, hasOG: false },
+  { url: '/contacto', minTitleLen: 10, hasOG: false },
+];
+
+for (const p of PAGES) {
+  test(\`SEO méta-tags — \${p.url}\`, async ({ page }) => {
+    await page.goto(\`https://mi-sitio.ejemplo.com\${p.url}\`);
+
+    // Titre
+    const title = await page.title();
+    expect(title.length).toBeGreaterThan(p.minTitleLen);
+    expect(title.length).toBeLessThan(70);
+
+    // Description
+    const desc = await page.locator('meta[name="description"]').getAttribute('content');
+    expect(desc).not.toBeNull();
+    expect(desc!.length).toBeGreaterThan(50);
+    expect(desc!.length).toBeLessThan(160);
+
+    // Canonique
+    const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
+    expect(canonical).toContain(p.url);
+
+    // Open Graph (si applicable)
+    if (p.hasOG) {
+      const ogTitle = await page.locator('meta[property="og:title"]').getAttribute('content');
+      const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content');
+      expect(ogTitle).not.toBeNull();
+      expect(ogImage).toMatch(/^https?:\/\//);
+    }
+  });
+}`,
+  },
+  {
+    id: 'ej-a22',
+    num: 'A22',
+    title: 'Automatiser le flux de paiement avec interception',
+    difficulty: 'advanced',
+    description:
+      'Simulez le flux complet de checkout d\'un e-commerce. Interceptez l\'appel au processeur de paiement et renvoyez un paiement réussi simulé sans débiter une vraie carte. Vérifiez l\'email de confirmation dans la réponse de l\'API.',
+    hint: 'Interceptez le POST vers l\'endpoint de paiement avec `page.route`. Retournez la structure de réponse que votre application attend du processeur.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('checkout complet avec paiement simulé', async ({ page }) => {
+  // Mock du processeur de paiement (Stripe/PayPal/etc)
+  await page.route('**/api/payments/process', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'pay_mock_123',
+        status: 'succeeded',
+        amount: 4999,
+        receipt_email: 'cliente@test.com',
+      }),
+    });
+  });
+
+  // Flux d'achat
+  await page.goto('https://mi-tienda.ejemplo.com');
+  await page.locator('.product-card').first().getByRole('button', { name: 'Agregar' }).click();
+  await page.getByRole('link', { name: 'Carrito' }).click();
+  await page.getByRole('button', { name: 'Pagar' }).click();
+
+  // Remplir le checkout
+  await page.getByLabel('Email').fill('cliente@test.com');
+  await page.getByLabel('Número de tarjeta').fill('4242 4242 4242 4242');
+  await page.getByLabel('Fecha').fill('12/26');
+  await page.getByLabel('CVC').fill('123');
+  await page.getByRole('button', { name: 'Confirmar pago' }).click();
+
+  // Vérifier la confirmation
+  await expect(page).toHaveURL(/confirmacion/);
+  await expect(page.getByText('Pago exitoso')).toBeVisible();
+  await expect(page.getByText('cliente@test.com')).toBeVisible();
+});`,
+  },
+
   // ─────────────────────────── INTERMÉDIAIRE ─────────────────────────────
   {
     id: 'ej-i01',
