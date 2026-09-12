@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useLocale } from '../context/LocaleContext';
+import { strings } from '../data/strings';
 
 interface QuizProps {
   id: string;
@@ -15,6 +17,8 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 export function Quiz({ id, questionHtml, options, answerIndex, explanationHtml, answeredIndex, onAnswer }: QuizProps) {
   const [localChoice, setLocalChoice] = useState<number | undefined>(answeredIndex);
   const answered = localChoice !== undefined;
+  const { locale } = useLocale();
+  const t = strings[locale];
 
   function choose(i: number) {
     if (answered) return;
@@ -28,7 +32,7 @@ export function Quiz({ id, questionHtml, options, answerIndex, explanationHtml, 
         <span className="quiz-icon">🧠</span>
         <span dangerouslySetInnerHTML={{ __html: questionHtml }} />
       </p>
-      <div className="quiz-options" role="group" aria-label="Opciones de respuesta">
+      <div className="quiz-options" role="group" aria-label={t.quizOptionsAria}>
         {options.map((optHtml, i) => {
           const stateClass = answered ? (i === answerIndex ? ' correct' : i === localChoice ? ' wrong' : '') : '';
           return (

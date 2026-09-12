@@ -1,11 +1,15 @@
 import { Highlight } from 'prism-react-renderer';
 import { useState } from 'react';
 import type { CodeBlockData } from '../types';
+import { useLocale } from '../context/LocaleContext';
+import { strings } from '../data/strings';
 import { langClassToPrism } from './codeLang';
 import { guideTheme } from './guideTheme';
 
 export function CodeBlock({ label, langClass, code }: CodeBlockData) {
   const [copied, setCopied] = useState(false);
+  const { locale } = useLocale();
+  const t = strings[locale];
 
   async function handleCopy() {
     try {
@@ -22,7 +26,7 @@ export function CodeBlock({ label, langClass, code }: CodeBlockData) {
       <div className="cb-head">
         <span className={`lang ${langClass}`}>{label}</span>
         <button type="button" className={`copy-btn${copied ? ' ok' : ''}`} onClick={handleCopy}>
-          {copied ? '¡Copiado!' : 'Copiar'}
+          {copied ? t.copiedBtn : t.copyBtn}
         </button>
       </div>
       <Highlight code={code.trim()} language={langClassToPrism(langClass)} theme={guideTheme}>

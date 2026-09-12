@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { LocaleProvider } from '../context/LocaleContext';
 import { SectionView } from './Section';
 import type { Section } from '../types';
 
@@ -30,7 +31,7 @@ describe('SectionView', () => {
     const onComplete = vi.fn();
     const onAnswer = vi.fn();
     const onUnComplete = vi.fn();
-    render(<SectionView data={DATA} isVisited={false} quizAnswers={{}} onComplete={onComplete} onUnComplete={onUnComplete} onAnswer={onAnswer} />);
+    render(<LocaleProvider><SectionView data={DATA} isVisited={false} quizAnswers={{}} onComplete={onComplete} onUnComplete={onUnComplete} onAnswer={onAnswer} /></LocaleProvider>);
 
     expect(screen.getByText('Instalación')).toBeInTheDocument();
 
@@ -50,7 +51,7 @@ describe('SectionView', () => {
 
   it('shows done badge when closed and completed text when open with isVisited=true', () => {
     const onUnComplete = vi.fn();
-    render(<SectionView data={DATA} isVisited={true} quizAnswers={{}} onComplete={vi.fn()} onUnComplete={onUnComplete} onAnswer={vi.fn()} />);
+    render(<LocaleProvider><SectionView data={DATA} isVisited={true} quizAnswers={{}} onComplete={vi.fn()} onUnComplete={onUnComplete} onAnswer={vi.fn()} /></LocaleProvider>);
 
     expect(document.querySelector('.sec-done-badge')).toBeInTheDocument();
 

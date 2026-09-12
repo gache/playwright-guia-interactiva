@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import type { Exercise } from '../types';
-
-const DIFF_LABEL: Record<Exercise['difficulty'], string> = {
-  beginner: '🟢 Principiante',
-  intermediate: '🟡 Intermedio',
-  advanced: '🟠 Avanzado',
-};
+import { useLocale } from '../context/LocaleContext';
+import { strings } from '../data/strings';
 
 const DIFF_ORDER: Exercise['difficulty'][] = ['beginner', 'intermediate', 'advanced'];
 
@@ -13,7 +9,7 @@ interface ExercisesProps {
   exercises: Exercise[];
 }
 
-function ExerciseCard({ ex }: { ex: Exercise }) {
+function ExerciseCard({ ex, t }: { ex: Exercise; t: typeof strings[keyof typeof strings] }) {
   const [showHint, setShowHint] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
 
@@ -26,15 +22,15 @@ function ExerciseCard({ ex }: { ex: Exercise }) {
       <p className="ex-desc">{ex.description}</p>
       <div className="ex-actions">
         <button className="ex-btn" onClick={() => setShowHint(v => !v)}>
-          {showHint ? 'Ocultar pista' : '💡 Mostrar pista'}
+          {showHint ? t.hideHint : t.showHint}
         </button>
         <button className="ex-btn ex-btn-sol" onClick={() => setShowSolution(v => !v)}>
-          {showSolution ? 'Ocultar solución' : '✅ Ver solución'}
+          {showSolution ? t.hideSolution : t.showSolution}
         </button>
       </div>
       {showHint && (
         <div className="ex-hint">
-          <span className="ex-hint-label">💡 Pista:</span> {ex.hint}
+          <span className="ex-hint-label">{t.hintLabel}</span> {ex.hint}
         </div>
       )}
       {showSolution && (
@@ -46,6 +42,13 @@ function ExerciseCard({ ex }: { ex: Exercise }) {
 
 export function Exercises({ exercises }: ExercisesProps) {
   const [activeFilter, setActiveFilter] = useState<Exercise['difficulty'] | 'all'>('all');
+  const { locale } = useLocale();
+  const t = strings[locale];
+  const DIFF_LABEL: Record<Exercise['difficulty'], string> = {
+    beginner: t.diffBeginner,
+    intermediate: t.diffIntermediate,
+    advanced: t.diffAdvanced,
+  };
 
   const grouped = DIFF_ORDER.map(d => ({
     diff: d,
@@ -66,17 +69,16 @@ export function Exercises({ exercises }: ExercisesProps) {
   return (
     <div className="ex-wrapper">
       <p className="ex-intro">
-        {exercises.length} ejercicios prácticos organizados por nivel. Cada uno incluye descripción,
-        pista opcional y solución con código TypeScript listo para ejecutar.
+        {t.exercisesIntro(exercises.length)}
       </p>
       <div className="ex-practice-banner">
         <span className="ex-practice-icon">🌐</span>
         <div>
-          <strong>Sitio de práctica recomendado:</strong>{' '}
+          <strong>{t.practiceBannerLabel}</strong>{' '}
           <a href="https://practice.expandtesting.com/register" target="_blank" rel="noreferrer" className="ex-practice-link">
             practice.expandtesting.com
           </a>
-          {' '}— tiene formularios de registro/login, notas CRUD, basic-auth y más. Los ejercicios B04, I11, I17, I18, I19, A01 y A02 apuntan a este sitio directamente.
+          {' '}{t.practiceBannerText}
         </div>
       </div>
 
@@ -85,7 +87,7 @@ export function Exercises({ exercises }: ExercisesProps) {
           className={`ex-filter${activeFilter === 'all' ? ' active' : ''}`}
           onClick={() => setActiveFilter('all')}
         >
-          Todos ({exercises.length})
+          {t.filterAll(exercises.length)}
         </button>
         {DIFF_ORDER.map(d => (
           <button
@@ -102,7 +104,7 @@ export function Exercises({ exercises }: ExercisesProps) {
         <section key={diff} className="ex-group">
           <h2 className="ex-group-title">{label}</h2>
           <div className="ex-grid">
-            {items.map(ex => <ExerciseCard key={ex.id} ex={ex} />)}
+            {items.map(ex => <ExerciseCard key={ex.id} ex={ex} t={t} />)}
           </div>
         </section>
       ))}
