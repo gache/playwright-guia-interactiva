@@ -93,3 +93,15 @@ export interface ProgressState {
   visited: string[];
   quiz: Record<string, number>;
 }
+
+export interface Exercise {
+  id: string;
+  num: string;
+  title: string;
+  difficulty: Difficulty;
+  description: string;
+  hint: string;
+  solution: string;
+}
+
+export type Locale = 'es' | 'fr';

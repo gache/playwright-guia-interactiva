@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Block, Section } from '../types';
+import { useLocale } from '../context/LocaleContext';
+import { strings } from '../data/strings';
 import { Callout } from './Callout';
 import { CodeBlock } from './CodeBlock';
 import { Compare } from './Compare';
@@ -7,11 +9,6 @@ import { Exercise } from './Exercise';
 import { Quiz } from './Quiz';
 import { Shortcuts } from './Shortcuts';
 
-const DIFF_LABEL: Record<NonNullable<Section['difficulty']>, string> = {
-  beginner: '🟢 Principiante',
-  intermediate: '🟡 Intermedio',
-  advanced: '🟠 Avanzado',
-};
 const DIFF_SUFFIX: Record<NonNullable<Section['difficulty']>, string> = {
   beginner: 'b',
   intermediate: 'i',
@@ -37,6 +34,13 @@ export function SectionView({
   nextId, requestOpen, onRequestHandled,
 }: SectionProps) {
   const [open, setOpen] = useState(false);
+  const { locale } = useLocale();
+  const t = strings[locale];
+  const DIFF_LABEL: Record<NonNullable<Section['difficulty']>, string> = {
+    beginner: t.diffBeginner,
+    intermediate: t.diffIntermediate,
+    advanced: t.diffAdvanced,
+  };
   const previewText = data.description.replace(/<[^>]*>/g, '').slice(0, 130).trim();
   const diffClass = data.difficulty ? ` diff-${DIFF_SUFFIX[data.difficulty]}` : '';
 
@@ -96,13 +100,13 @@ export function SectionView({
             <div className="sec-complete-row">
               {isVisited ? (
                 <>
-                  <span className="sec-complete-done">Sección completada</span>
+                  <span className="sec-complete-done">{t.sectionCompleted}</span>
                   <button
                     className="sec-uncomplete-btn"
                     onClick={() => onUnComplete(data.id)}
-                    aria-label="Desmarcar como completada"
+                    aria-label={t.unmarkAria}
                   >
-                    Desmarcar
+                    {t.unmarkBtn}
                   </button>
                   {nextId && (
                     <button
@@ -112,13 +116,13 @@ export function SectionView({
                         el?.dispatchEvent(new CustomEvent('section-open-request', { bubbles: true }));
                       }}
                     >
-                      Siguiente <span className="sec-next-arrow">→</span>
+                      {t.nextBtn} <span className="sec-next-arrow">→</span>
                     </button>
                   )}
                 </>
               ) : (
                 <button className="sec-complete-btn" onClick={() => onComplete(data.id)}>
-                  Marcar como completada
+                  {t.markCompleteBtn}
                 </button>
               )}
             </div>

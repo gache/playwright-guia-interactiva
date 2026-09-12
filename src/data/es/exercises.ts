@@ -1,12 +1,4 @@
-export interface Exercise {
-  id: string;
-  num: string;
-  title: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  description: string;
-  hint: string;
-  solution: string;
-}
+import type { Exercise } from '../../types';
 
 export const exercises: Exercise[] = [
   // ───────────────────────────── PRINCIPIANTE ─────────────────────────────
