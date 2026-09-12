@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Sidebar } from './Sidebar';
+import { LocaleProvider } from '../context/LocaleContext';
 import type { Section } from '../types';
 
 const SECTIONS: Section[] = [
@@ -11,7 +12,8 @@ const SECTIONS: Section[] = [
 
 describe('Sidebar', () => {
   it('renders difficulty-grouped nav links with progress stats', () => {
-    render(<Sidebar sections={SECTIONS} activeId="s1" visited={['s1']} quizAnsweredCount={2} quizTotal={29} />);
+    localStorage.setItem('lang', 'es');
+    render(<LocaleProvider><Sidebar sections={SECTIONS} activeId="s1" visited={['s1']} quizAnsweredCount={2} quizTotal={29} /></LocaleProvider>);
     expect(screen.getByText(/🟢 Principiante/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Instalación/ })).toBeInTheDocument();
     expect(screen.getByText('1 / 3')).toBeInTheDocument();
@@ -20,7 +22,8 @@ describe('Sidebar', () => {
   });
 
   it('filters links by search text and removes non-matching sections from DOM', () => {
-    render(<Sidebar sections={SECTIONS} activeId={null} visited={[]} quizAnsweredCount={0} quizTotal={29} />);
+    localStorage.setItem('lang', 'es');
+    render(<LocaleProvider><Sidebar sections={SECTIONS} activeId={null} visited={[]} quizAnsweredCount={0} quizTotal={29} /></LocaleProvider>);
     const search = screen.getByPlaceholderText('Buscar sección…');
     fireEvent.change(search, { target: { value: 'navegación' } });
 
@@ -29,7 +32,8 @@ describe('Sidebar', () => {
   });
 
   it('shows clear button when search has text and clears on click', () => {
-    render(<Sidebar sections={SECTIONS} activeId={null} visited={[]} quizAnsweredCount={0} quizTotal={29} />);
+    localStorage.setItem('lang', 'es');
+    render(<LocaleProvider><Sidebar sections={SECTIONS} activeId={null} visited={[]} quizAnsweredCount={0} quizTotal={29} /></LocaleProvider>);
     const search = screen.getByPlaceholderText('Buscar sección…');
     expect(screen.queryByLabelText('Limpiar búsqueda')).toBeNull();
 
@@ -40,5 +44,11 @@ describe('Sidebar', () => {
     fireEvent.click(clearBtn);
     expect(search).toHaveValue('');
     expect(screen.queryByLabelText('Limpiar búsqueda')).toBeNull();
+  });
+
+  it('shows French search placeholder when locale is fr', () => {
+    localStorage.setItem('lang', 'fr');
+    render(<LocaleProvider><Sidebar sections={SECTIONS} activeId={null} visited={[]} quizAnsweredCount={0} quizTotal={29} /></LocaleProvider>);
+    expect(screen.getByPlaceholderText('Rechercher une section…')).toBeInTheDocument();
   });
 });

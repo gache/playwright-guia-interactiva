@@ -8,37 +8,15 @@ import { Exercises } from './components/Exercises';
 import { useProgress } from './hooks/useProgress';
 import { useScrollProgress } from './hooks/useScrollProgress';
 import { useActiveSection } from './hooks/useActiveSection';
-import { sections } from './data/es/sections';
-import { roadmapStages } from './data/es/roadmap';
-import { glossaryTerms } from './data/es/glossary';
-import { exercises } from './data/es/exercises';
+import { useLocale } from './context/LocaleContext';
+import { getSections, getExercises, getGlossaryTerms, getRoadmapStages } from './data';
+import { strings } from './data/strings';
 
 const QUIZ_TOTAL = 29;
 
 const DIFF_ORDER: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
 
-const sortedSections = (() => {
-  const ordered = [...sections].sort((a, b) => {
-    const da = DIFF_ORDER[a.difficulty ?? 'intermediate'] ?? 1;
-    const db = DIFF_ORDER[b.difficulty ?? 'intermediate'] ?? 1;
-    if (da !== db) return da - db;
-    return Number(a.num) - Number(b.num);
-  });
-  const counters: Record<string, number> = {};
-  return ordered.map(s => {
-    const d = s.difficulty ?? 'intermediate';
-    counters[d] = (counters[d] ?? 0) + 1;
-    return { ...s, num: String(counters[d]).padStart(2, '0') };
-  });
-})();
-
 type Difficulty = 'all' | 'beginner' | 'intermediate' | 'advanced';
-const DIFF_FILTERS: { key: Difficulty; label: string; count: number }[] = [
-  { key: 'all', label: 'Todos', count: sortedSections.length },
-  { key: 'beginner', label: '🟢 Principiante', count: sortedSections.filter(s => s.difficulty === 'beginner').length },
-  { key: 'intermediate', label: '🟡 Intermedio', count: sortedSections.filter(s => s.difficulty === 'intermediate').length },
-  { key: 'advanced', label: '🟠 Avanzado', count: sortedSections.filter(s => s.difficulty === 'advanced').length },
-];
 
 function MetaSection({ id, icon, title, badge, children }: {
   id: string; icon: string; title: string;
@@ -65,9 +43,38 @@ function MetaSection({ id, icon, title, badge, children }: {
 }
 
 export default function App() {
+  const { locale } = useLocale();
+  const t = strings[locale];
+  const sections = useMemo(() => getSections(locale), [locale]);
+  const exercises = useMemo(() => getExercises(locale), [locale]);
+  const glossaryTerms = useMemo(() => getGlossaryTerms(locale), [locale]);
+  const roadmapStages = useMemo(() => getRoadmapStages(locale), [locale]);
+
+  const sortedSections = useMemo(() => {
+    const ordered = [...sections].sort((a, b) => {
+      const da = DIFF_ORDER[a.difficulty ?? 'intermediate'] ?? 1;
+      const db = DIFF_ORDER[b.difficulty ?? 'intermediate'] ?? 1;
+      if (da !== db) return da - db;
+      return Number(a.num) - Number(b.num);
+    });
+    const counters: Record<string, number> = {};
+    return ordered.map(s => {
+      const d = s.difficulty ?? 'intermediate';
+      counters[d] = (counters[d] ?? 0) + 1;
+      return { ...s, num: String(counters[d]).padStart(2, '0') };
+    });
+  }, [sections]);
+
+  const DIFF_FILTERS: { key: Difficulty; label: string; count: number }[] = [
+    { key: 'all', label: t.diffAll, count: sortedSections.length },
+    { key: 'beginner', label: t.diffBeginner, count: sortedSections.filter(s => s.difficulty === 'beginner').length },
+    { key: 'intermediate', label: t.diffIntermediate, count: sortedSections.filter(s => s.difficulty === 'intermediate').length },
+    { key: 'advanced', label: t.diffAdvanced, count: sortedSections.filter(s => s.difficulty === 'advanced').length },
+  ];
+
   const { visited, quizAnswers, markVisited, markUnvisited, recordAnswer } = useProgress();
   const scrollPct = useScrollProgress();
-  const sectionIds = useMemo(() => ['ruta', 'glosario', 'ejercicios', ...sortedSections.map(s => s.id)], []);
+  const sectionIds = useMemo(() => ['ruta', 'glosario', 'ejercicios', ...sortedSections.map(s => s.id)], [sortedSections]);
   const activeId = useActiveSection(sectionIds);
   const quizAnsweredCount = Object.keys(quizAnswers).filter(id => /^s\d+$/.test(id)).length;
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -99,12 +106,12 @@ export default function App() {
 
   return (
     <>
-      <a href="#main-content" className="skip-link">Saltar al contenido</a>
+      <a href="#main-content" className="skip-link">{t.skipLink}</a>
       <div id="progress" style={{ width: `${scrollPct}%` }} />
       <button
         className={`hamburger${sidebarOpen ? ' open' : ''}`}
         onClick={() => setSidebarOpen(o => !o)}
-        aria-label="Abrir menú de navegación"
+        aria-label={t.openNavAria}
       >☰</button>
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
       <Sidebar
@@ -120,15 +127,12 @@ export default function App() {
       />
       <main id="main-content" className={sidebarCollapsed ? 'sidebar-collapsed' : ''}>
         <header className="page-head">
-          <div className="page-head-badge">Guía de Estudio Interactiva</div>
+          <div className="page-head-badge">{t.pageHeadBadge}</div>
           <h1>
-            Domina <em>Playwright</em><br />
-            <span className="page-head-sub">con TypeScript desde cero</span>
+            {t.headTitlePrefix} <em>Playwright</em><br />
+            <span className="page-head-sub">{t.headSubtitle}</span>
           </h1>
-          <p>
-            Todo lo que necesitas para aprender Playwright en español: ejemplos comentados,
-            quizzes, glosario, ejercicios prácticos con soluciones y un mini proyecto completo.
-          </p>
+          <p>{t.intro}</p>
 
           {visited.length > 0 && (
             <div className="page-progress">
@@ -136,41 +140,41 @@ export default function App() {
                 <div className="page-progress-fill" style={{ width: `${completedPct}%` }} />
               </div>
               <span className="page-progress-label">
-                {visited.length}/{sortedSections.length} completadas · {completedPct}%
+                {t.progressLabel(visited.length, sortedSections.length, completedPct)}
               </span>
             </div>
           )}
 
           <div className="page-stats">
-            <div className="page-stat"><span className="page-stat-n">31</span><span className="page-stat-l">secciones</span></div>
+            <div className="page-stat"><span className="page-stat-n">{sortedSections.length}</span><span className="page-stat-l">{t.statSections}</span></div>
             <div className="page-stat-div" />
-            <div className="page-stat"><span className="page-stat-n">29</span><span className="page-stat-l">quizzes</span></div>
+            <div className="page-stat"><span className="page-stat-n">{QUIZ_TOTAL}</span><span className="page-stat-l">{t.statQuizzes}</span></div>
             <div className="page-stat-div" />
-            <div className="page-stat"><span className="page-stat-n">66</span><span className="page-stat-l">ejercicios</span></div>
+            <div className="page-stat"><span className="page-stat-n">{exercises.length}</span><span className="page-stat-l">{t.statExercises}</span></div>
             <div className="page-stat-div" />
-            <div className="page-stat"><span className="page-stat-n">3</span><span className="page-stat-l">niveles</span></div>
+            <div className="page-stat"><span className="page-stat-n">3</span><span className="page-stat-l">{t.statLevels}</span></div>
           </div>
           <div className="chips">
-            <span className="chip g">🗺️ Ruta guiada</span>
-            <span className="chip g">🧠 Quiz por sección</span>
-            <span className="chip g">📖 Glosario</span>
-            <span className="chip g">🏋️ Ejercicios con soluciones</span>
-            <span className="chip g">⚠️ Errores comunes</span>
-            <span className="chip g">🚀 Mini proyecto</span>
-            <span className="chip">TypeScript</span>
-            <span className="chip">ES2024</span>
+            <span className="chip g">{t.chipRoute}</span>
+            <span className="chip g">{t.chipQuiz}</span>
+            <span className="chip g">{t.chipGlossary}</span>
+            <span className="chip g">{t.chipExercises}</span>
+            <span className="chip g">{t.chipErrors}</span>
+            <span className="chip g">{t.chipProject}</span>
+            <span className="chip">{t.chipTs}</span>
+            <span className="chip">{t.chipEs}</span>
           </div>
         </header>
 
         <div className="sections-grid">
-          <MetaSection id="ruta" icon="🗺️" title="Ruta de Aprendizaje">
+          <MetaSection id="ruta" icon="🗺️" title={t.roadmapTitle}>
             <Roadmap stages={roadmapStages} />
           </MetaSection>
-          <MetaSection id="glosario" icon="📖" title="Glosario">
+          <MetaSection id="glosario" icon="📖" title={t.glossaryTitle}>
             <Glossary terms={glossaryTerms} />
           </MetaSection>
-          <MetaSection id="ejercicios" icon="🏋️" title="Ejercicios Prácticos"
-            badge={<span className="sec-tag">{exercises.length} ejercicios</span>}>
+          <MetaSection id="ejercicios" icon="🏋️" title={t.exercisesTitle}
+            badge={<span className="sec-tag">{t.exercisesBadge(exercises.length)}</span>}>
             <Exercises exercises={exercises} />
           </MetaSection>
         </div>
@@ -192,8 +196,8 @@ export default function App() {
           {visibleSections.length === 0 ? (
             <div className="sections-empty">
               <span className="sections-empty-icon">🔍</span>
-              <p>No hay secciones para este nivel.</p>
-              <button className="sec-complete-btn" onClick={() => setDiffFilter('all')}>Ver todas</button>
+              <p>{t.emptyStateText}</p>
+              <button className="sec-complete-btn" onClick={() => setDiffFilter('all')}>{t.emptyStateBtn}</button>
             </div>
           ) : (
             visibleSections.map((s, i) => (

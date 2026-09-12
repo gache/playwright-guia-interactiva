@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
 import type { Section } from '../types';
+import { useLocale } from '../context/LocaleContext';
+import { strings } from '../data/strings';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 const DIFF_ORDER: NonNullable<Section['difficulty']>[] = ['beginner', 'intermediate', 'advanced'];
-const DIFF_LABEL: Record<NonNullable<Section['difficulty']>, string> = {
-  beginner: '🟢 Principiante',
-  intermediate: '🟡 Intermedio',
-  advanced: '🟠 Avanzado',
-};
 const DIFF_SUFFIX: Record<NonNullable<Section['difficulty']>, string> = {
   beginner: 'b',
   intermediate: 'i',
@@ -41,6 +39,13 @@ function Highlight({ text, query }: { text: string; query: string }) {
 export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTotal, mobileOpen, collapsed, onMobileClose, onToggleCollapse }: SidebarProps) {
   const [query, setQuery] = useState('');
   const q = query.toLowerCase().trim();
+  const { locale } = useLocale();
+  const t = strings[locale];
+  const DIFF_LABEL: Record<NonNullable<Section['difficulty']>, string> = {
+    beginner: t.diffBeginner,
+    intermediate: t.diffIntermediate,
+    advanced: t.diffAdvanced,
+  };
 
   const groups = useMemo(() => {
     const map = new Map<NonNullable<Section['difficulty']>, Section[]>();
@@ -50,7 +55,7 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
       map.get(key)!.push(s);
     });
     return DIFF_ORDER.map(d => [DIFF_LABEL[d], map.get(d)!] as const).filter(([, items]) => items.length > 0);
-  }, [sections]);
+  }, [sections, t]);
 
   function matches(title: string) {
     return q.length === 0 || title.toLowerCase().includes(q);
@@ -65,17 +70,18 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
         {!collapsed && (
           <div className="nav-logo-text">
             <div className="mark">Playwright</div>
-            <div className="sub">Guía de Estudio · ruta guiada + {sections.length} lecciones</div>
+            <div className="sub">{t.navLogoSub(sections.length)}</div>
           </div>
         )}
         <button
           className="sidebar-collapse-btn"
           onClick={onToggleCollapse}
-          aria-label={collapsed ? 'Expandir barra lateral' : 'Colapsar barra lateral'}
-          title={collapsed ? 'Expandir' : 'Colapsar'}
+          aria-label={collapsed ? t.expandSidebarAria : t.collapseSidebarAria}
+          title={collapsed ? t.expandSidebarTitle : t.collapseSidebarTitle}
         >
           {collapsed ? '›' : '‹'}
         </button>
+        {!collapsed && <LanguageSwitcher />}
       </div>
 
       {!collapsed && (
@@ -83,13 +89,13 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
           <div className="nav-search">
             <input
               type="text"
-              placeholder="Buscar sección…"
+              placeholder={t.searchPlaceholder}
               autoComplete="off"
               value={query}
               onChange={e => setQuery(e.target.value)}
             />
             {query.length > 0 && (
-              <button className="search-clear" onClick={() => setQuery('')} aria-label="Limpiar búsqueda">✕</button>
+              <button className="search-clear" onClick={() => setQuery('')} aria-label={t.clearSearchAria}>✕</button>
             )}
           </div>
 
@@ -145,9 +151,9 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
             );
           })}
 
-          <div className="nav-group">Práctica</div>
+          <div className="nav-group">{t.practiceGroup}</div>
           <a href="#ejercicios" className={activeId === 'ejercicios' ? 'active' : ''} onClick={() => onMobileClose?.()}>
-            <span className="n">🏋️</span> Ejercicios Prácticos
+            <span className="n">🏋️</span> {t.exercisesTitle}
           </a>
         </>
       )}
