@@ -738,5 +738,458 @@ export const sections: Section[] = [
         "explanationHtml": "<code>route.fetch()</code> exécute la requête originale et vous donne la réponse réelle ; à partir de là, vous pouvez la lire, la modifier (par exemple ajouter un élément à la liste) et la transmettre à la page avec <code>fulfill()</code> — contrairement à <code>route.fulfill()</code> direct, qui ne touche jamais le serveur."
       }
     ]
+  },
+  {
+    "id": "s18",
+    "num": "18",
+    "group": "Avancé",
+    "title": "Informations de Page",
+    "difficulty": "intermediate",
+    "description": "Obtenez des métadonnées, du contenu DOM et exécutez du JavaScript dans le contexte de la page.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Parfois vous avez besoin de données qui ne sont pas un élément visuel : le titre, l'URL actuelle, ou exécuter une logique JavaScript qui n'a pas d'équivalent direct dans l'API de Playwright."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "const titulo = await page.title();\nconst url    = page.url();\nconst vp     = page.viewportSize();\nconst texto  = await page.locator('h1').innerText();\n\n// Exécuter du JS dans le navigateur\nconst scrollY = await page.evaluate(() => window.scrollY);\nconst n = await page.evaluate(\n  sel => document.querySelectorAll(sel).length,\n  '.tarjeta'\n);\n\nawait page.pdf({ path: 'pagina.pdf', format: 'A4' });"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s18",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Quelle est la différence entre <code>page.title()</code> et <code>page.url()</code> concernant le besoin d'un <code>await</code> ?",
+        "options": [
+          "<code>title()</code> est asynchrone (nécessite await) ; <code>url()</code> est synchrone car Playwright a déjà cette donnée en mémoire.",
+          "Les deux sont asynchrones et nécessitent await.",
+          "Aucun des deux n'a besoin d'await.",
+          "Cela dépend du navigateur utilisé."
+        ],
+        "answerIndex": 0,
+        "explanationHtml": "<code>url()</code> ne croise pas le processus du navigateur — Playwright connaît déjà l'URL actuelle en interne. <code>title()</code> nécessite une requête asynchrone au document."
+      }
+    ]
+  },
+  {
+    "id": "s19",
+    "num": "19",
+    "group": "Avancé",
+    "title": "Viewport & Émulation",
+    "difficulty": "intermediate",
+    "description": "Simulez des appareils, le mode sombre, le fuseau horaire et la géolocalisation pour les tests responsive.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Une application peut se comporter différemment sur mobile que sur ordinateur. Émuler des appareils, le thème sombre ou la géolocalisation permet de tester ces scénarios sans appareil physique."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "import { devices } from '@playwright/test';\n\n// Appareil complet (viewport + userAgent + touch)\nconst ctx = await browser.newContext({ ...devices['iPhone 14'] });\n\nawait context.setViewportSize({ width: 375, height: 812 });\nawait context.emulateMedia({ colorScheme: 'dark' });\nawait context.emulateTimezone('America/Mexico_City');\nawait context.grantPermissions(['geolocation']);\nawait context.setGeolocation({ latitude: 19.4326, longitude: -99.1332 });"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s19",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Qu'inclut <code>devices['iPhone 14']</code> qu'un simple <code>setViewportSize()</code> n'inclut pas ?",
+        "options": [
+          "La localisation GPS de l'appareil réel.",
+          "Les navigateurs installés sur un iPhone réel.",
+          "Seulement la largeur et la hauteur de l'écran.",
+          "Le viewport, le user agent et l'émulation tactile (touch) ensemble, comme un profil d'appareil complet."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "<code>devices[...]</code> est un preset complet (viewport + userAgent + hasTouch, etc.), tandis que <code>setViewportSize()</code> change seulement la taille de la fenêtre."
+      }
+    ]
+  },
+  {
+    "id": "s20",
+    "num": "20",
+    "group": "Avancé",
+    "title": "Screenshots & Vidéos",
+    "difficulty": "intermediate",
+    "description": "Captures d'écran pour le débogage visuel et la détection de régressions dans l'interface.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Un test qui échoue est beaucoup plus facile à déboguer avec une capture d'écran ou une vidéo qu'avec uniquement un message d'erreur texte."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "await page.screenshot({ path: 'inicio.png' });\nawait page.screenshot({ path: 'full.png', fullPage: true });\nawait page.locator('#chart').screenshot({ path: 'chart.png' });\n\n// Snapshot testing (comparaison visuelle)\nawait expect(page).toHaveScreenshot('homepage.png');\n\n// Vidéo\nconst ctx = await browser.newContext({\n  recordVideo: { dir: './videos/', size: { width: 1280, height: 720 } }\n});\n\n// Désactiver les animations pour des captures stables\nawait page.addStyleTag({\n  content: '*, *::before, *::after { animation-duration: 0s !important; }'\n});"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s20",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — À quoi sert <code>toHaveScreenshot()</code> par rapport à <code>page.screenshot()</code> ?",
+        "options": [
+          "<code>page.screenshot()</code> ne peut pas capturer la page entière.",
+          "Ils sont identiques, seul le nom change.",
+          "Ne fonctionne qu'en mode headed.",
+          "C'est une assertion : elle compare la capture actuelle à une référence sauvegardée et échoue si elles diffèrent (test visuel)."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "<code>page.screenshot()</code> enregistre simplement une image. <code>toHaveScreenshot()</code> fait partie du système d'assertions : il compare pixel par pixel avec un \"baseline\" sauvegardé, détectant les régressions visuelles."
+      }
+    ]
+  },
+  {
+    "id": "s21",
+    "num": "21",
+    "group": "Avancé",
+    "title": "Traçage",
+    "difficulty": "advanced",
+    "description": "La trace capture les captures d'écran, le réseau, le DOM et le code source pour chaque action. Elle se visualise dans le Playwright Trace Viewer.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Quand un test échoue en CI et que vous ne pouvez pas le reproduire sur votre machine, une trace est le plus proche de « enregistrer » exactement ce qui s'est passé, étape par étape."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "await context.tracing.start({ screenshots: true, snapshots: true, sources: true });\n\n// ... test ...\nawait page.goto('/login');\nawait page.getByRole('button', { name: 'Entrar' }).click();\n\nawait context.tracing.stop({ path: './trazas/login.zip' });\n// $ npx playwright show-trace trazas/login.zip"
+        }
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "icon": "💡",
+        "html": "En production, utilisez <code>trace: 'on-first-retry'</code> dans la config pour ne sauvegarder la trace que lorsqu'un test échoue pour la première fois."
+      },
+      {
+        "type": "quiz",
+        "id": "s21",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Quelle est la configuration recommandée de <code>trace</code> en production/CI ?",
+        "options": [
+          "Il n'y a pas de recommandation standard.",
+          "<code>'on-first-retry'</code> : enregistre la trace seulement quand un test échoue lors de sa première tentative et est rejoué.",
+          "<code>'off'</code>, car elle consomme trop de ressources.",
+          "<code>'on'</code>, pour enregistrer toujours, dans tous les tests."
+        ],
+        "answerIndex": 1,
+        "explanationHtml": "Enregistrer toujours est coûteux en espace et en temps. \"on-first-retry\" est le compromis : vous ne payez le coût de la trace que quand quelque chose a vraiment échoué et doit être investigué."
+      }
+    ]
+  },
+  {
+    "id": "s22",
+    "num": "22",
+    "group": "Avancé",
+    "title": "Configuration (playwright.config.ts)",
+    "difficulty": "advanced",
+    "description": "Définissez les navigateurs, les timeouts, le répertoire des tests et les options globales.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Le fichier de configuration centralise les décisions qui, si vous les répétez test par test, créent des incohérences. Un seul endroit contrôle les navigateurs, les timeouts et les rapports pour tout le projet."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "playwright.config.ts",
+          "langClass": "cfg",
+          "code": "import { defineConfig, devices } from '@playwright/test';\n\nexport default defineConfig({\n  testDir: './tests',\n  timeout: 30_000,\n  retries: 2,\n  workers: 4,\n  reporter: [[ 'html', { open: 'on-failure' }]],\n\n  use: {\n    baseURL: 'https://mi-app.com',\n    headless: true,\n    viewport: { width: 1280, height: 720 },\n    screenshot: 'only-on-failure',\n    trace: 'on-first-retry',\n    video: 'on-first-retry',\n  },\n\n  projects: [\n    { name: 'Chrome',  use: { ...devices['Desktop Chrome'] } },\n    { name: 'Firefox', use: { ...devices['Desktop Firefox'] } },\n    { name: 'Mobile',  use: { ...devices['iPhone 14'] } },\n  ],\n\n  webServer: {\n    command: 'npm run dev',\n    url: 'http://localhost:3000',\n    reuseExistingServer: true,\n  },\n});"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s22",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Dans le bloc <code>projects</code>, à quoi servent des entrées séparées pour Chrome, Firefox et Mobile ?",
+        "options": [
+          "Permet d'exécuter la même suite de tests contre différents navigateurs/appareils sans dupliquer le code des tests.",
+          "Chaque projet a besoin de son propre fichier de tests ; ils ne peuvent pas être partagés.",
+          "Cela n'affecte que le rapport final, pas l'exécution réelle.",
+          "Il est obligatoire d'avoir au moins 3 projets configurés."
+        ],
+        "answerIndex": 0,
+        "explanationHtml": "<code>projects</code> est une multiplication gratuite : vous écrivez les tests une seule fois et Playwright les exécute contre chaque configuration de navigateur/appareil que vous définissez."
+      }
+    ]
+  },
+  {
+    "id": "s23",
+    "num": "23",
+    "group": "Avancé",
+    "title": "Annotations de Tests",
+    "difficulty": "intermediate",
+    "description": "Organisez les tests en groupes, utilisez des hooks de cycle de vie et marquez les tests spéciaux sans supprimer le code.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Organiser les tests en groupes et utiliser des hooks évite de répéter le même code de setup dans chaque test, et marquer les tests comme skip ou fixme documente l'état réel de votre suite sans supprimer le travail effectué."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "TypeScript",
+          "langClass": "ts",
+          "code": "test.describe('Autenticación', () => {\n  test.beforeAll(async () => { /* una vez antes del grupo */ });\n  test.afterAll(async  () => { /* una vez después del grupo */ });\n  test.beforeEach(async ({ page }) => { await page.goto('/login'); });\n  test.afterEach(async  ({ page }) => { /* limpieza */ });\n\n  test('login exitoso', async ({ page }) => { ... });\n  test.skip('SSO — no implementado', async () => {});\n  test.fixme('reset contraseña — flaky', async () => {});\n});\n\ntest.only('depurar este test', async ({ page }) => { ... });  // seulement celui-ci\ntest.slow('test pesado', async ({ page }) => { ... });       // triple timeout"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s23",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Quel est le vrai risque de laisser <code>test.only()</code> dans un commit ?",
+        "options": [
+          "Seul ce test s'exécutera en CI — tous les autres restent silencieusement sans s'exécuter, donnant une fausse impression que tout passe.",
+          "Aucun : Playwright le détecte et l'ignore automatiquement en CI.",
+          "Le test s'exécutera plus lentement que les autres.",
+          "Cela casse la compilation TypeScript."
+        ],
+        "answerIndex": 0,
+        "explanationHtml": "<code>test.only</code> est utile pendant le débogage d'un test localement, mais s'il arrive sur main, le CI cesse de vérifier tout le reste sans aucune erreur visible — c'est pourquoi il est recommandé d'avoir un linter qui le détecte avant le commit."
+      }
+    ]
+  },
+  {
+    "id": "s24",
+    "num": "24",
+    "group": "Avancé",
+    "title": "Commandes et Raccourcis",
+    "difficulty": "beginner",
+    "description": "Commandes pour exécuter, filtrer, déboguer et générer des rapports de tests depuis le terminal.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Connaître les flags de la CLI vous fait gagner des minutes à chaque débogage : filtrer par nom, voir seulement ce qui a échoué, ou enregistrer des actions plutôt que de les écrire à la main."
+      },
+      {
+        "type": "shortcuts",
+        "items": [
+          {
+            "keys": "--ui",
+            "description": "Interface visuelle"
+          },
+          {
+            "keys": "--headed",
+            "description": "Voir le navigateur"
+          },
+          {
+            "keys": "--debug",
+            "description": "Debug pas à pas"
+          },
+          {
+            "keys": "-g \"texto\"",
+            "description": "Filtrer par nom"
+          },
+          {
+            "keys": "--last-failed",
+            "description": "Seulement les échoués"
+          },
+          {
+            "keys": "codegen",
+            "description": "Enregistrer les actions"
+          }
+        ]
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "bash",
+          "langClass": "sh",
+          "code": "npx playwright test                          # todos los tests\nnpx playwright test --ui                      # interfaz visual (recomendado)\nnpx playwright test tests/login.spec.ts       # un archivo\nnpx playwright test -g \"login exitoso\"        # filtrar por nombre\nnpx playwright test --project=Chrome          # un solo browser\nnpx playwright test --debug                   # debug interactivo\nnpx playwright show-report                    # ver reporte HTML\nnpx playwright codegen https://mi-app.com     # grabar → generar código\nnpx playwright show-trace trazas/trace.zip    # ver trace"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s24",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Que fait <code>npx playwright codegen https://mi-app.com</code> ?",
+        "options": [
+          "Optimise le code existant des tests.",
+          "Génère le fichier playwright.config.ts depuis zéro.",
+          "Exécute tous les tests existants contre cette URL.",
+          "Ouvre un navigateur où vous enregistrez vos actions (clics, saisie) et génère le code Playwright automatiquement."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "<code>codegen</code> est un outil d'exploration : vous interagissez avec l'application manuellement et Playwright traduit chaque action en code — très utile pour découvrir quels locators utiliser."
+      }
+    ]
+  },
+  {
+    "id": "s25",
+    "num": "25",
+    "group": "Avancé",
+    "title": "Page Object Model (POM)",
+    "difficulty": "advanced",
+    "description": "Un <strong>Page Object</strong> est une classe qui regroupe les locators et les actions d'une page (ou composant) en un seul endroit. Au lieu d'écrire <code>page.getByLabel('Email').fill(...)</code> dans chaque test, le test appelle une méthode avec un nom métier comme <code>loginPage.login(usuario, clave)</code>.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Répéter les mêmes locators dans chaque test est la raison la plus courante pour laquelle une suite devient impossible à maintenir. Le pattern Page Object résout cela en regroupant chaque page dans une classe réutilisable."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "pages/LoginPage.ts",
+          "langClass": "ts",
+          "code": "import { type Page, type Locator } from '@playwright/test';\n\nexport class LoginPage {\n  readonly page: Page;\n  readonly email: Locator;\n  readonly password: Locator;\n  readonly submitBtn: Locator;\n\n  constructor(page: Page) {\n    this.page = page;\n    // Les locators sont définis une seule fois, ici\n    this.email = page.getByLabel('Email');\n    this.password = page.getByLabel('Contraseña');\n    this.submitBtn = page.getByRole('button', { name: 'Entrar' });\n  }\n\n  async goto() {\n    await this.page.goto('/login');\n  }\n\n  // La méthode exprime l'INTENTION, pas les étapes techniques\n  async login(usuario: string, clave: string) {\n    await this.email.fill(usuario);\n    await this.password.fill(clave);\n    await this.submitBtn.click();\n  }\n}"
+        }
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "tests/login.spec.ts — el test ya no conoce ningún locator",
+          "langClass": "ts",
+          "code": "import { test, expect } from '@playwright/test';\nimport { LoginPage } from '../pages/LoginPage';\n\ntest('login exitoso', async ({ page }) => {\n  const loginPage = new LoginPage(page);\n\n  await loginPage.goto();\n  await loginPage.login('user@test.com', 'secret123');\n\n  await expect(page).toHaveURL(/dashboard/);\n});"
+        }
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "icon": "💡",
+        "html": "Si la conception change et que le champ \"Contraseña\" passe à \"Clave de acceso\", vous ne corrigez qu'<strong>un seul locator</strong> dans <code>LoginPage.ts</code> — aucun test n'a besoin d'être modifié."
+      },
+      {
+        "type": "compare",
+        "title": "",
+        "bad": {
+          "label": "❌ Sans POM — locators répétés dans chaque test",
+          "langClass": "bad",
+          "code": "test('test 1', async ({ page }) => {\n  await page.getByLabel('Email').fill('a@test.com');\n  await page.getByLabel('Contraseña').fill('123');\n  await page.getByRole('button', { name: 'Entrar' }).click();\n});\ntest('test 2', async ({ page }) => {\n  await page.getByLabel('Email').fill('b@test.com');\n  // ...mêmes locators, encore une fois\n});"
+        },
+        "good": {
+          "label": "✅ Avec POM — un seul endroit à maintenir",
+          "langClass": "good",
+          "code": "test('test 1', async ({ page }) => {\n  await new LoginPage(page).login('a@test.com', '123');\n});\ntest('test 2', async ({ page }) => {\n  await new LoginPage(page).login('b@test.com', '456');\n});"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice — Créez votre propre Page Object",
+        "taskHtml": "Convertissez cette logique répétée en Page Object appelé <code>SearchPage</code> avec une méthode <code>search(termino: string)</code> :\n          <br><br>\n          <code>await page.getByPlaceholder('Buscar...').fill('zapatos');</code><br>\n          <code>await page.getByRole('button', { name: 'Buscar' }).click();</code>",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "export class SearchPage {\n  readonly page: Page;\n  readonly searchInput: Locator;\n  readonly searchBtn: Locator;\n\n  constructor(page: Page) {\n    this.page = page;\n    this.searchInput = page.getByPlaceholder('Buscar...');\n    this.searchBtn = page.getByRole('button', { name: 'Buscar' });\n  }\n\n  async search(termino: string) {\n    await this.searchInput.fill(termino);\n    await this.searchBtn.click();\n  }\n}"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s25",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Qu'apporte un test qui utilise un Page Object comme <code>loginPage.login(usuario, clave)</code> au lieu d'écrire les locators directement ?",
+        "options": [
+          "C'est une exigence obligatoire de l'API de Playwright pour pouvoir utiliser des fixtures.",
+          "Playwright génère automatiquement le rapport HTML seulement si vous utilisez des Page Objects.",
+          "Le test devient plus lisible et, si la conception de la page change, il suffit de mettre à jour le Page Object — pas chaque test.",
+          "Le test s'exécute plus rapidement car il utilise moins de mémoire."
+        ],
+        "answerIndex": 2,
+        "explanationHtml": "Un Page Object centralise le « comment » (les locators, les étapes techniques) pour que le test n'exprime que le « quoi » (l'intention métier). Vous verrez ce même principe appliqué à un projet complet en section 27, avec <code>TodoPage</code>."
+      }
+    ]
+  },
+  {
+    "id": "s26",
+    "num": "26",
+    "group": "Avancé",
+    "title": "Fixtures Personnalisés",
+    "difficulty": "advanced",
+    "description": "Un <strong>fixture</strong> personnalisé vous permet d'injecter quelque chose directement dans la signature du test — comme un Page Object déjà instancié avec login effectué — sans répéter <code>new LoginPage(page)</code> ni <code>beforeEach</code> dans chaque fichier. C'est ainsi que sont organisés les frameworks Playwright dans les projets réels.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Répéter 'new LoginPage(page)' et la navigation initiale dans le beforeEach de chaque fichier est exactement le type de duplication qu'un fixture personnalisé élimine — vous le définissez une fois et n'importe quel test le demande par nom."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "fixtures/pages.fixture.ts",
+          "langClass": "ts",
+          "code": "import { test as base } from '@playwright/test';\nimport { LoginPage } from '../pages/LoginPage';\n\ntype MisFixtures = { loginPage: LoginPage };\n\nexport const test = base.extend<MisFixtures>({\n  loginPage: async ({ page }, use) => {\n    const loginPage = new LoginPage(page);\n    await loginPage.goto();               // setup — s'exécute AVANT le test\n\n    await use(loginPage);                 // ici le test reçoit le fixture et s'exécute\n\n    // code après use() = teardown, s'exécute APRÈS le test\n  },\n});\n\nexport { expect } from '@playwright/test';"
+        }
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "tests/login.spec.ts — el test pide el fixture por nombre",
+          "langClass": "ts",
+          "code": "import { test, expect } from '../fixtures/pages.fixture';\n\ntest('login exitoso', async ({ loginPage, page }) => {\n  // loginPage existe déjà et a déjà navigué — le setup est terminé\n  await loginPage.login('user@test.com', 'secret123');\n  await expect(page).toHaveURL(/dashboard/);\n});"
+        }
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "icon": "💡",
+        "html": "<code>use(valor)</code> est le point où le fixture remet la valeur au test. Tout ce que vous écrivez <strong>après</strong> ce <code>await use(...)</code> s'exécute comme teardown automatique à la fin du test — même si le test a échoué."
+      },
+      {
+        "type": "compare",
+        "title": "",
+        "bad": {
+          "label": "❌ Sans fixture — répété dans chaque fichier",
+          "langClass": "bad",
+          "code": "test.beforeEach(async ({ page }) => {\n  const loginPage = new LoginPage(page);\n  await loginPage.goto();\n});\n// ...et encore dans le fichier de test suivant"
+        },
+        "good": {
+          "label": "✅ Avec fixture — une seule définition",
+          "langClass": "good",
+          "code": "test('...', async ({ loginPage }) => {\n  // prêt à utiliser, dans n'importe quel fichier\n});"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice — Fixture avec login automatique",
+        "taskHtml": "Modifiez le fixture <code>loginPage</code> pour qu'il effectue également la connexion automatiquement avec <code>demo@test.com</code> / <code>demo123</code> avant de le remettre au test — ainsi, tout test demandant <code>{'{'} loginPage {'}'}</code> démarrera déjà authentifié.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "loginPage: async ({ page }, use) => {\n  const loginPage = new LoginPage(page);\n  await loginPage.goto();\n  await loginPage.login('demo@test.com', 'demo123');  // login déjà inclus dans le setup\n\n  await use(loginPage);\n},"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s26",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Que représente le code qui se trouve APRÈS <code>await use(loginPage)</code> à l'intérieur d'un fixture ?",
+        "options": [
+          "De la documentation que Playwright ignore à l'exécution.",
+          "Un second fixture alternatif si le premier échoue.",
+          "Du code qui s'exécute avant le reste du fixture, peu importe sa position.",
+          "Le teardown : code que Playwright exécute automatiquement à la fin du test, même si le test a échoué."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "<code>use(valor)</code> est le point où le fixture remet la valeur au test et le test s'exécute ; tout ce que vous écrivez après cet <code>await</code> s'exécute quand le test se termine — c'est l'endroit naturel pour fermer les sessions, nettoyer les données ou libérer les ressources."
+      }
+    ]
   }
 ];
