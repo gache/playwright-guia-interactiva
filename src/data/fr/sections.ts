@@ -1191,5 +1191,483 @@ export const sections: Section[] = [
         "explanationHtml": "<code>use(valor)</code> est le point où le fixture remet la valeur au test et le test s'exécute ; tout ce que vous écrivez après cet <code>await</code> s'exécute quand le test se termine — c'est l'endroit naturel pour fermer les sessions, nettoyer les données ou libérer les ressources."
       }
     ]
+  },
+  {
+    "id": "s27",
+    "num": "27",
+    "group": "Pratique",
+    "title": "Mini Projet Complet",
+    "difficulty": "advanced",
+    "description": "Une suite de tests réelle qui relie tout ce que vous avez appris : setup de session, flux de login, CRUD de tâches et vérification d'état. Utilise <a href=\"https://todomvc.com/examples/react/dist/\" style=\"color:var(--cyan)\" target=\"_blank\">TodoMVC React</a> comme application de pratique.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Lire les fonctionnalités séparément n'est pas la même chose que de les combiner dans un flux réel. Ce projet relie un fixture personnalisé, un Page Object (<code>TodoPage</code>), des locators sémantiques et des assertions dans une seule suite, comme dans un cas réel de travail."
+      },
+      {
+        "type": "callout",
+        "variant": "info",
+        "icon": "🗺️",
+        "html": "Ce projet utilise : un <strong>Page Object</strong> (<code>TodoPage</code>, section 25), un <strong>fixture personnalisé</strong> (section 26) qui l'instancie et navigue automatiquement, des <strong>locators sémantiques</strong> et des <strong>assertions</strong> enchaînées."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "playwright.config.ts — config del proyecto",
+          "langClass": "cfg",
+          "code": "import { defineConfig } from '@playwright/test';\nexport default defineConfig({\n  testDir: './tests',\n  use: {\n    baseURL: 'https://todomvc.com/examples/react/dist/',\n    headless: true,\n    screenshot: 'only-on-failure',\n  },\n});"
+        }
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "pages/TodoPage.ts — el Page Object del proyecto",
+          "langClass": "ts",
+          "code": "import { type Page, type Locator, expect } from '@playwright/test';\n\nexport class TodoPage {\n  readonly page: Page;\n  readonly newTodoInput: Locator;\n  readonly todoItems: Locator;\n  readonly clearCompletedBtn: Locator;\n  readonly toggleAllCheckbox: Locator;\n\n  constructor(page: Page) {\n    this.page = page;\n    this.newTodoInput = page.getByPlaceholder('What needs to be done?');\n    this.todoItems = page.locator('.todo-list li');\n    this.clearCompletedBtn = page.getByRole('button', { name: 'Clear completed' });\n    this.toggleAllCheckbox = page.locator('label[for=\"toggle-all\"]');\n  }\n\n  async goto() {\n    await this.page.goto('/');\n    await expect(this.page).toHaveTitle(/TodoMVC/);\n  }\n\n  async addTodo(titulo: string) {\n    await this.newTodoInput.fill(titulo);\n    await this.newTodoInput.press('Enter');\n  }\n\n  async toggleFirst() {\n    await this.todoItems.first().locator('.toggle').click();\n  }\n\n  async editFirst(nuevoTexto: string) {\n    await this.todoItems.first().dblclick();\n    const edit = this.page.locator('.todo-list li.editing input.edit');\n    await edit.fill(nuevoTexto);\n    await edit.press('Enter');\n  }\n\n  async filterBy(nombre: 'All' | 'Active' | 'Completed') {\n    await this.page.getByRole('link', { name: nombre }).click();\n  }\n}"
+        }
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "fixtures/todo.fixture.ts — el fixture del proyecto",
+          "langClass": "ts",
+          "code": "import { test as base } from '@playwright/test';\nimport { TodoPage } from '../pages/TodoPage';\n\ntype MisFixtures = { todo: TodoPage };\n\nexport const test = base.extend<MisFixtures>({\n  todo: async ({ page }, use) => {\n    const todo = new TodoPage(page);\n    await todo.goto();      // setup — chaque test démarre avec l'application déjà chargée\n    await use(todo);\n  },\n});\n\nexport { expect } from '@playwright/test';"
+        }
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "tests/todo.spec.ts — el test describe comportamiento, TodoPage hace el trabajo",
+          "langClass": "ts",
+          "code": "import { test, expect } from '../fixtures/todo.fixture';\n\ntest.describe('TodoMVC — Gestión de tareas', () => {\n  // il n'y a plus de `let todo` ni de beforeEach — le fixture s'en charge\n\n  test('crear una nueva tarea', async ({ todo, page }) => {\n    await todo.addTodo('Aprender Playwright');\n\n    // Vérifier qu'il apparaît dans la liste\n    await expect(page.getByText('Aprender Playwright')).toBeVisible();\n\n    // Vérifier le compteur\n    await expect(page.getByText('1 item left')).toBeVisible();\n  });\n\n  test('completar una tarea', async ({ todo, page }) => {\n    await todo.addTodo('Tarea para completar');\n    await todo.toggleFirst();\n\n    await expect(page.locator('.todo-list li.completed')).toHaveCount(1);\n    await expect(page.getByText('0 items left')).toBeVisible();\n  });\n\n  test('filtrar tareas activas y completadas', async ({ todo, page }) => {\n    await todo.addTodo('Tarea 1');\n    await todo.addTodo('Tarea 2');\n    await todo.toggleFirst();\n\n    await todo.filterBy('Active');\n    await expect(page.locator('.todo-list li')).toHaveCount(1);\n    await expect(page.getByText('Tarea 2')).toBeVisible();\n\n    await todo.filterBy('Completed');\n    await expect(page.locator('.todo-list li')).toHaveCount(1);\n    await expect(page.getByText('Tarea 1')).toBeVisible();\n  });\n\n  test('editar una tarea con doble clic', async ({ todo, page }) => {\n    await todo.addTodo('Texto original');\n    await todo.editFirst('Texto actualizado');\n\n    await expect(page.getByText('Texto actualizado')).toBeVisible();\n    await expect(page.getByText('Texto original')).not.toBeVisible();\n  });\n\n  test('eliminar todas las completadas', async ({ todo, page }) => {\n    await todo.addTodo('Completada');\n    await todo.addTodo('Pendiente');\n    await todo.toggleFirst();\n\n    await todo.clearCompletedBtn.click();\n\n    await expect(page.locator('.todo-list li')).toHaveCount(1);\n    await expect(page.getByText('Pendiente')).toBeVisible();\n  });\n});"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice — Étendez le projet",
+        "taskHtml": "Ajoutez un sixième test à la suite qui :\n          <br>1. Crée 3 tâches avec des titres différents\n          <br>2. Complète les 3 en utilisant la case à cocher globale (double flèche en haut à gauche, sélecteur : <code>.toggle-all</code>)\n          <br>3. Vérifie que le compteur affiche <strong>\"0 items left\"</strong>\n          <br>4. Vérifie que le bouton \"Clear completed\" est visible",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "test('completar todas las tareas de una vez', async ({ todo, page }) => {\n  await todo.addTodo('Tarea A');\n  await todo.addTodo('Tarea B');\n  await todo.addTodo('Tarea C');\n\n  // On réutilise le locator déjà défini dans le Page Object\n  await todo.toggleAllCheckbox.click();\n\n  await expect(page.getByText('0 items left')).toBeVisible();\n  await expect(todo.clearCompletedBtn).toBeVisible();\n  await expect(page.locator('.todo-list li.completed')).toHaveCount(3);\n});"
+        }
+      },
+      {
+        "type": "quiz",
+        "id": "s27",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Dans ce projet, chaque test reçoit <code>{ todo, page }</code> comme paramètre au lieu de créer <code>new TodoPage(page)</code> dans un <code>beforeEach</code>. Qu'est-ce que <code>todo</code> dans ce cas ?",
+        "options": [
+          "Une variable globale partagée entre tous les fichiers de test.",
+          "Un alias de <code>page</code> sans aucune différence réelle.",
+          "Un mock qui remplace l'application réelle durant le test.",
+          "Le fixture <code>todo</code> défini dans <code>fixtures/todo.fixture.ts</code> : il est déjà instancié et a déjà navigué vers l'application avant que le test commence."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "C'est la combinaison de la section 25 (Page Object) et de la section 26 (Fixtures) : le fixture <code>todo</code> encapsule la création de <code>TodoPage</code> et son <code>goto()</code> initial, ainsi chaque test démarre directement sur le « quoi » (ajouter, compléter, filtrer des tâches) sans répéter le « comment »."
+      }
+    ]
+  },
+  {
+    "id": "s28",
+    "num": "28",
+    "group": "Pratique",
+    "title": "Erreurs Fréquentes et Comment les Résoudre",
+    "difficulty": "intermediate",
+    "description": "Les erreurs les plus courantes lors de l'apprentissage de Playwright, avec le code problématique et la correction expliquée.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Ces six erreurs expliquent la majorité des tests « flaky » ou silencieusement cassés que vous rencontrerez dans n'importe quel projet réel. Les reconnaître vous fait gagner des heures de débogage."
+      },
+      {
+        "type": "compare",
+        "title": "❶ Utiliser un sélecteur CSS quand l'élément change de classe avec le design",
+        "bad": {
+          "label": "❌ Fragile",
+          "langClass": "bad",
+          "code": "// Si la classe CSS est renommée, le test échoue\nawait page.locator('.btn-primary-v2').click();\nawait page.locator('div > form > button:nth-child(3)').click();"
+        },
+        "good": {
+          "label": "✅ Robuste",
+          "langClass": "good",
+          "code": "// Le texte et le rôle du bouton changent rarement\nawait page.getByRole('button', { name: 'Guardar cambios' }).click();"
+        }
+      },
+      {
+        "type": "compare",
+        "title": "❷ Race condition : agir avant que le popup soit prêt",
+        "bad": {
+          "label": "❌ Race condition",
+          "langClass": "bad",
+          "code": "// Le popup peut s'ouvrir AVANT que\n// vous exécutiez waitForEvent — vous le manquez\nawait page.click('a[target=\"_blank\"]');\nconst popup = await page.waitForEvent('popup'); // trop tard"
+        },
+        "good": {
+          "label": "✅ Correct",
+          "langClass": "good",
+          "code": "// Promise.all lance LES DEUX avant l'await\nconst [popup] = await Promise.all([\n  page.waitForEvent('popup'),   // écoute en premier\n  page.click('a[target=\"_blank\"]'),\n]);"
+        }
+      },
+      {
+        "type": "compare",
+        "title": "❸ Utiliser des timeouts fixes pour attendre le chargement",
+        "bad": {
+          "label": "❌ Fragile et lent",
+          "langClass": "bad",
+          "code": "await page.click('#cargar');\n// 3 s sur machine rapide = gaspillage\n// 3 s sur CI lent = échec sporadique\nawait page.waitForTimeout(3000);\nawait expect(page.locator('.lista')).toBeVisible();"
+        },
+        "good": {
+          "label": "✅ Basé sur une condition",
+          "langClass": "good",
+          "code": "await page.click('#cargar');\n// Attend exactement ce qu'il faut\nawait expect(page.locator('.lista')).toBeVisible();\n// Le expect réessaie pour vous"
+        }
+      },
+      {
+        "type": "compare",
+        "title": "❹ Oublier await dans une assertion",
+        "bad": {
+          "label": "❌ Le test passe toujours (bug silencieux)",
+          "langClass": "bad",
+          "code": "// Sans await, l'assertion NE s'exécute PAS\n// Le test passe même si la condition échoue\nexpect(page.locator('h1')).toHaveText('Hola');\n// ⬆️ Ceci retourne une Promise non résolue"
+        },
+        "good": {
+          "label": "✅ Avec await",
+          "langClass": "good",
+          "code": "// Toujours await dans les assertions Playwright\nawait expect(page.locator('h1')).toHaveText('Hola');\n// ⬆️ Attend et vérifie correctement"
+        }
+      },
+      {
+        "type": "compare",
+        "title": "❺ Enregistrer le handler de dialog après le clic qui le déclenche",
+        "bad": {
+          "label": "❌ Le dialogue se ferme tout seul",
+          "langClass": "bad",
+          "code": "await page.click('#eliminar'); // le dialog apparaît\n// Enregistrer ici est trop tard\npage.on('dialog', d => d.accept());"
+        },
+        "good": {
+          "label": "✅ Handler avant le clic",
+          "langClass": "good",
+          "code": "// Enregistrer AVANT l'action\npage.once('dialog', d => d.accept());\nawait page.click('#eliminar');"
+        }
+      },
+      {
+        "type": "callout",
+        "variant": "err",
+        "icon": "🚨",
+        "html": "<strong>Danger silencieux :</strong> Si vous faites un commit avec <code>test.only()</code> dans le code, seul ce test s'exécutera en CI et tous les autres ne seront pas lancés. Utilisez <code>--grep</code> en ligne de commande à la place, ou installez le plugin ESLint de Playwright qui détecte <code>test.only</code>."
+      },
+      {
+        "type": "compare",
+        "title": "❻ Utiliser test.only et l'oublier dans le code",
+        "bad": {
+          "label": "❌ Ne faites pas de commit avec ça",
+          "langClass": "bad",
+          "code": "test.only('mi test', async ({ page }) => {\n  // Si vous faites un commit, le CI n'exécute que ce test\n});"
+        },
+        "good": {
+          "label": "✅ Filtrez depuis la CLI",
+          "langClass": "good",
+          "code": "# Correr solo un test por nombre\nnpx playwright test -g \"mi test\"\n\n# O usar --debug para ese test\nnpx playwright test -g \"mi test\" --debug"
+        }
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "icon": "💡",
+        "html": "Installez <strong>eslint-plugin-playwright</strong> pour détecter automatiquement <code>test.only</code>, les <code>waitForTimeout</code> codés en dur et d'autres anti-patterns dans votre code."
+      },
+      {
+        "type": "quiz",
+        "id": "s28",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Parmi les six erreurs de cette section, laquelle peut faire qu'un test « passe » même si le comportement réel est cassé ?",
+        "options": [
+          "Oublier le <code>await</code> avant une assertion — la Promise ne se résout ni ne se vérifie jamais, et le test passe quand même.",
+          "Utiliser des sélecteurs CSS fragiles.",
+          "Utiliser des timeouts fixes au lieu d'attendre une condition.",
+          "Laisser <code>test.only()</code> dans le code."
+        ],
+        "answerIndex": 0,
+        "explanationHtml": "Sans <code>await</code>, <code>expect(locator).toHaveText(...)</code> retourne une Promise que personne n'attend — le test se termine avant que la vérification réelle n'ait lieu, et Playwright le signale comme réussi. C'est l'erreur la plus dangereuse car elle ne génère aucune erreur visible."
+      }
+    ]
+  },
+  {
+    "id": "s29",
+    "num": "29",
+    "group": "Pratique",
+    "title": "Questions Fréquentes d'Entretien",
+    "difficulty": "intermediate",
+    "description": "Questions typiques lors d'un entretien technique sur Playwright, avec la réponse courte que vous devriez déjà pouvoir donner après cette guide.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Ce sont les questions qui reviennent le plus dans les processus de recrutement pour des postes d'automatisation. Pouvoir y répondre avec assurance est, en pratique, le signe que vous avez vraiment compris l'outil et pas seulement copié des exemples."
+      },
+      {
+        "type": "code",
+        "block": {
+          "label": "Preguntas y respuestas cortas",
+          "langClass": "ts",
+          "code": "// 1. Pourquoi Playwright et pas Selenium ?\n//    Auto-waiting intégré (moins de tests « flaky »), une seule API\n//    pour UI + requêtes réseau, et un meilleur outillage : Trace Viewer,\n//    UI Mode, codegen. Selenium nécessite des waits manuels et plus de\n//    configuration pour arriver au même résultat.\n\n// 2. Qu'est-ce qu'un BrowserContext ?\n//    Un profil de navigateur isolé — comme une fenêtre privée.\n//    Permet de simuler plusieurs utilisateurs en parallèle. Voir section 03.\n\n// 3. Comment fonctionne l'auto-waiting ?\n//    Avant chaque action, Playwright attend que l'élément\n//    existe, soit visible, soit activé et cesse de bouger —\n//    sans que le test n'ait à le demander explicitement.\n\n// 4. Quel est l'ordre de priorité des locators ?\n//    getByRole > getByLabel / getByPlaceholder > getByTestId > CSS > XPath.\n//    Les sémantiques d'abord car ils reflètent comment un utilisateur réel interagit.\n\n// 5. Qu'est-ce qu'un fixture ?\n//    Une façon d'injecter des dépendances (comme un Page Object déjà\n//    prêt) directement dans la signature du test. Voir section 26.\n\n// 6. Comment Playwright exécute-t-il les tests en parallèle ?\n//    Il répartit les fichiers de test entre plusieurs \"workers\"\n//    (processus), configurables avec `workers` dans playwright.config.ts.\n\n// 7. Qu'est-ce qu'un Page Object et pourquoi l'utilise-t-on ?\n//    Une classe qui regroupe les locators et les actions d'une page.\n//    Le test exprime l'intention métier, pas les étapes techniques. Voir section 25.\n\n// 8. Comment éviter de dépendre d'un vrai backend dans vos tests ?\n//    Avec page.route() vous interceptez la requête et répondez avec\n//    des données mockées — l'UI est testée de la même façon, sans backend. Voir section 17."
+        }
+      },
+      {
+        "type": "callout",
+        "variant": "info",
+        "icon": "📌",
+        "html": "Structure de dossiers typique dans un projet Playwright : <code>tests/</code> (specs), <code>pages/</code> (Page Objects), <code>fixtures/</code> (fixtures personnalisés) et <code>playwright.config.ts</code> à la racine. Voir section 22."
+      },
+      {
+        "type": "quiz",
+        "id": "s29",
+        "isTeo": false,
+        "questionHtml": "<strong>Auto-évaluation</strong> — Un recruteur vous demande pourquoi vous préféreriez Playwright à Selenium dans un nouveau projet. Quelle est la meilleure réponse courte ?",
+        "options": [
+          "Parce que Selenium ne supporte pas du tout TypeScript.",
+          "Auto-waiting intégré (moins de tests flaky), une seule API pour l'UI et les requêtes réseau, et un meilleur outillage : Trace Viewer, UI Mode et codegen.",
+          "Parce que Selenium ne reçoit plus aucune maintenance.",
+          "Parce que Playwright est le seul à pouvoir exécuter des tests en parallèle."
+        ],
+        "answerIndex": 1,
+        "explanationHtml": "Selenium supporte bien TypeScript et peut effectivement paralléliser avec une configuration supplémentaire, et est toujours activement maintenu — l'avantage réel de Playwright est l'auto-waiting natif, l'API unifiée (UI + request) et des outils comme le Trace Viewer qui réduisent considérablement le temps de débogage."
+      }
+    ]
+  },
+  {
+    "id": "s30",
+    "num": "30",
+    "group": "Pratique",
+    "title": "Banque d'Exercices Pratiques",
+    "difficulty": "intermediate",
+    "description": "Huit exercices de code indépendants couvrant des sujets de toute la guide — beaucoup d'entre eux n'ont pas d'exercice propre dans leur section. Essayez de résoudre chacun avant d'ouvrir la solution.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Lire le code de quelqu'un d'autre n'est pas la même chose que l'écrire de zéro sous pression. Pratiquer sans avoir la solution sous les yeux est ce qui fixe vraiment un concept en mémoire."
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice 1 (Actions) — Formulaire d'inscription",
+        "taskHtml": "Étant donné un formulaire avec un champ étiqueté <strong>\"Nombre completo\"</strong>, un autre <strong>\"Email\"</strong>, une case à cocher <strong>\"Acepto los términos\"</strong> et un bouton <strong>\"Crear cuenta\"</strong>, écrivez le code qui le remplit et l'envoie.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "await page.getByLabel('Nombre completo').fill('Ana Torres');\nawait page.getByLabel('Email').fill('ana@correo.com');\nawait page.getByLabel('Acepto los términos').check();\nawait page.getByRole('button', { name: 'Crear cuenta' }).click();"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice 2 (Assertions) — Compteur du panier",
+        "taskHtml": "Après avoir ajouté un produit, vérifiez que l'élément avec <code>data-testid=\"carrito-contador\"</code> affiche le texte <strong>\"1\"</strong>, et que le bouton <strong>\"Ver carrito\"</strong> est activé.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "await expect(page.getByTestId('carrito-contador')).toHaveText('1');\nawait expect(page.getByRole('button', { name: 'Ver carrito' })).toBeEnabled();"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice 3 (Waits) — Charger plus de produits",
+        "taskHtml": "Un bouton <strong>\"Cargar más\"</strong> ajoute des produits à une liste après un délai variable. Écrivez le code qui attend qu'il y ait <strong>au moins 10</strong> éléments avec la classe <code>.producto</code> — sans utiliser <code>waitForTimeout</code>.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "await page.getByRole('button', { name: 'Cargar más' }).click();\n\n// toHaveCount attend un nombre EXACT — pour « au moins N » il faut du polling\nawait page.waitForFunction(\n  () => document.querySelectorAll('.producto').length >= 10\n);"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice 4 (Frames) — Formulaire de paiement embarqué",
+        "taskHtml": "Un <code>&lt;iframe id=\"pago-frame\"&gt;</code> contient un champ avec le placeholder <strong>\"Número de tarjeta\"</strong>. Écrivez le code qui le remplit.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "await page.frameLocator('#pago-frame')\n  .getByPlaceholder('Número de tarjeta')\n  .fill('4111111111111111');"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice 5 (Dialogs) — Confirmer avant de supprimer",
+        "taskHtml": "En cliquant sur <strong>\"Eliminar cuenta\"</strong>, un <code>confirm()</code> natif du navigateur apparaît. Écrivez le code qui l'accepte automatiquement.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "// Enregistré AVANT le clic qui le déclenche\npage.once('dialog', dialog => dialog.accept());\nawait page.getByRole('button', { name: 'Eliminar cuenta' }).click();"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice 6 (API Testing) — Créer et vérifier une ressource",
+        "taskHtml": "En utilisant le fixture <code>request</code>, créez un produit via <code>POST /api/productos</code> avec <code>{'{'} nombre: 'Taza', precio: 12 {'}'}</code>, vérifiez que la réponse a le statut <strong>201</strong>, et que le corps retourné inclut un <code>id</code>.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "const res = await request.post('/api/productos', {\n  data: { nombre: 'Taza', precio: 12 },\n});\nawait expect(res).toHaveStatus(201);\n\nconst body = await res.json();\nexpect(body.id).toBeDefined();"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice 7 (Intercepter le réseau) — Simuler un panier vide",
+        "taskHtml": "Interceptez <code>GET **/api/carrito</code> pour qu'il retourne toujours une liste vide, naviguez vers <code>/carrito</code>, et vérifiez que la page affiche le texte <strong>\"Tu carrito está vacío\"</strong>.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "await page.route('**/api/carrito', route => route.fulfill({\n  status: 200,\n  contentType: 'application/json',\n  body: JSON.stringify([]),\n}));\n\nawait page.goto('/carrito');\nawait expect(page.getByText('Tu carrito está vacío')).toBeVisible();"
+        }
+      },
+      {
+        "type": "exercise",
+        "title": "Exercice 8 (Configuration) — Ajouter un projet mobile",
+        "taskHtml": "Ajoutez un nouveau <code>project</code> à <code>playwright.config.ts</code> nommé <strong>'Mobile Safari'</strong> qui utilise le dispositif <code>devices['iPhone 14']</code>.",
+        "solution": {
+          "label": "Solución",
+          "langClass": "ts",
+          "code": "import { devices } from '@playwright/test';\n\nprojects: [\n  // ...projets existants (Chrome, Firefox, Mobile)\n  { name: 'Mobile Safari', use: { ...devices['iPhone 14'] } },\n],"
+        }
+      }
+    ]
+  },
+  {
+    "id": "s31",
+    "num": "31",
+    "group": "Pratique",
+    "title": "Banque d'Exercices Théoriques",
+    "difficulty": "intermediate",
+    "description": "Huit questions à choix multiple sur des concepts qui n'ont pas été couverts dans le quiz d'aucune section — le même format d'auto-évaluation, mais regroupé comme une révision indépendante.",
+    "blocks": [
+      {
+        "type": "callout",
+        "variant": "why",
+        "icon": "🎯",
+        "html": "<strong>Pourquoi c'est important ?</strong> Ces questions ne dépendent pas de la mémorisation de la syntaxe, mais de la compréhension du « pourquoi » derrière chaque outil — exactement le type de question qui distingue celui qui a copié un exemple de celui qui a compris le concept."
+      },
+      {
+        "type": "callout",
+        "variant": "info",
+        "icon": "📊",
+        "html": "0 / 8 répondues"
+      },
+      {
+        "type": "quiz",
+        "id": "teo1",
+        "isTeo": true,
+        "questionHtml": "<strong>Question 1</strong> — Quelle est la vraie différence entre <code>locator.click()</code> et <code>locator.dispatchEvent('click')</code> ?",
+        "options": [
+          "Il n'y a aucune différence pratique entre les deux méthodes.",
+          "<code>click()</code> simule l'interaction réelle (attend la visibilité, la position et que l'élément soit activé) ; <code>dispatchEvent</code> déclenche l'événement directement sans ces vérifications.",
+          "<code>dispatchEvent()</code> est la méthode recommandée par Playwright pour tous les cas.",
+          "<code>click()</code> ne fonctionne que sur les boutons ; <code>dispatchEvent()</code> fonctionne sur n'importe quel élément."
+        ],
+        "answerIndex": 1,
+        "explanationHtml": "<code>click()</code> passe par tout l'auto-waiting de Playwright avant d'agir. <code>dispatchEvent()</code> est une porte dérobée de bas niveau, utile seulement quand un élément ne répond pas aux événements réels de l'utilisateur (peu courant)."
+      },
+      {
+        "type": "quiz",
+        "id": "teo2",
+        "isTeo": true,
+        "questionHtml": "<strong>Question 2</strong> — Que fait <code>expect.soft()</code> différemment d'un <code>expect()</code> normal ?",
+        "options": [
+          "Enregistre l'échec mais laisse le reste du test continuer à s'exécuter, au lieu de s'arrêter immédiatement.",
+          "Exécute l'assertion en arrière-plan sans bloquer le test.",
+          "C'est un alias de <code>expect()</code>, sans aucune différence réelle.",
+          "Retente l'assertion deux fois plus qu'un <code>expect()</code> normal."
+        ],
+        "answerIndex": 0,
+        "explanationHtml": "Avec les assertions « soft », le test continue à s'exécuter même si une échoue — utile quand vous voulez voir TOUS les problèmes d'une page dans un seul rapport, au lieu de vous arrêter au premier."
+      },
+      {
+        "type": "quiz",
+        "id": "teo3",
+        "isTeo": true,
+        "questionHtml": "<strong>Question 3</strong> — À quoi sert <code>test.step()</code> ?",
+        "options": [
+          "Convertit un test en plusieurs tests indépendants qui s'exécutent en parallèle.",
+          "Met le test en pause jusqu'à ce que quelqu'un appuie sur une touche, utile pour déboguer.",
+          "Regroupe les étapes dans le même test pour qu'elles apparaissent étiquetées séparément dans le rapport et le trace, sans le diviser en plusieurs tests.",
+          "Ajoute uniquement des commentaires visibles dans le code ; n'affecte pas le rapport."
+        ],
+        "answerIndex": 2,
+        "explanationHtml": "<code>test.step('nombre', async () =&gt; {'{'} ... {'}'})</code> ne change pas le comportement du test, mais rend le rapport et le trace beaucoup plus lisibles en divisant un test long en phases nommées."
+      },
+      {
+        "type": "quiz",
+        "id": "teo4",
+        "isTeo": true,
+        "questionHtml": "<strong>Question 4</strong> — Quel problème résout <code>globalSetup</code> dans <code>playwright.config.ts</code> ?",
+        "options": [
+          "S'exécute après chaque test individuel, comme un <code>afterEach</code> mais au niveau global.",
+          "Configure uniquement quel navigateur sera utilisé, sans exécuter de code propre.",
+          "Est obligatoire dans tout projet Playwright, sans exception.",
+          "S'exécute une seule fois avant toute la suite — idéal pour effectuer le login et sauvegarder le <code>storageState</code> au lieu de le répéter dans chaque test."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "<code>globalSetup</code> est l'endroit recommandé pour préparer des choses coûteuses (comme l'authentification) une seule fois, et que chaque test démarre déjà avec cet état sauvegardé."
+      },
+      {
+        "type": "quiz",
+        "id": "teo5",
+        "isTeo": true,
+        "questionHtml": "<strong>Question 5</strong> — Qu'est-ce que le « strict mode » des locators dans Playwright ?",
+        "options": [
+          "Oblige à utiliser uniquement des sélecteurs CSS, jamais des locators sémantiques.",
+          "Si un locator non filtré correspond à plus d'un élément, Playwright lance une erreur au lieu d'agir sur le premier par défaut.",
+          "Bloque toute action jusqu'à ce que le locator ait un timeout explicite défini.",
+          "S'applique uniquement aux méthodes <code>fill()</code> et <code>click()</code>, pas aux autres."
+        ],
+        "answerIndex": 1,
+        "explanationHtml": "Le « strict mode » est une protection : si votre locator est ambigu (correspond à 2+ éléments), Playwright préfère échouer bruyamment plutôt que de deviner lequel vous vouliez — évite les bugs silencieux."
+      },
+      {
+        "type": "quiz",
+        "id": "teo6",
+        "isTeo": true,
+        "questionHtml": "<strong>Question 6</strong> — Quelle différence y a-t-il entre <code>locator.waitFor({'{'} state: 'visible' {'}'})</code> et <code>await expect(locator).toBeVisible()</code> ?",
+        "options": [
+          "<code>waitFor()</code> est une attente générique qui n'apparaît pas comme assertion dans le rapport ; <code>toBeVisible()</code> documente également l'attente et apparaît bien comme assertion.",
+          "Ils sont complètement interchangeables, sans aucune différence réelle.",
+          "<code>waitFor()</code> lance une erreur immédiate si l'élément n'existe pas encore dans le DOM.",
+          "<code>toBeVisible()</code> n'a pas de timeout configurable, mais <code>waitFor()</code> en a un."
+        ],
+        "answerIndex": 0,
+        "explanationHtml": "Les deux attendent la même condition en interne, mais <code>toBeVisible()</code> est une assertion conçue pour être le point de vérification du test — elle est signalée comme telle quand elle échoue."
+      },
+      {
+        "type": "quiz",
+        "id": "teo7",
+        "isTeo": true,
+        "questionHtml": "<strong>Question 7</strong> — Que fait <code>expect(async () =&gt; {'{'} ... {'}'}).toPass()</code> ?",
+        "options": [
+          "Marque un test comme réussi sans exécuter aucune assertion réelle.",
+          "Ne peut être utilisé qu'à l'intérieur de hooks comme <code>beforeEach</code>, jamais à l'intérieur d'un test.",
+          "Retente un bloc entier de code (pas seulement une assertion) jusqu'à ce qu'il ne génère aucune erreur, ou que le timeout expire.",
+          "C'est la façon de passer (skip) un test de manière conditionnelle."
+        ],
+        "answerIndex": 2,
+        "explanationHtml": "<code>toPass()</code> étend le renouvellement automatique de Playwright à N'IMPORTE QUELLE logique, pas seulement à une assertion — utile quand vous avez besoin de plusieurs étapes dans le même renouvellement."
+      },
+      {
+        "type": "quiz",
+        "id": "teo8",
+        "isTeo": true,
+        "questionHtml": "<strong>Question 8</strong> — Qu'est-ce que le « sharding » (<code>--shard=1/3</code>) dans Playwright ?",
+        "options": [
+          "Une façon de chiffrer les rapports de test avant de les envoyer au CI.",
+          "Réduit automatiquement le nombre de tests, en éliminant ceux qui sont en double.",
+          "Ne peut être utilisé qu'en local ; non supporté sur les serveurs de CI.",
+          "Divise la suite complète de tests entre plusieurs machines ou processus pour accélérer l'exécution dans les grands pipelines de CI."
+        ],
+        "answerIndex": 3,
+        "explanationHtml": "Le sharding est différent de <code>workers</code> (parallélisme au sein d'UNE machine) : il répartit les fichiers de test entre des MACHINES différentes, chacune exécutant son propre ensemble de workers."
+      }
+    ]
   }
 ];
