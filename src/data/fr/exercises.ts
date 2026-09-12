@@ -403,6 +403,508 @@ test('capture d\'écran d\'un élément', async ({ page }) => {
 });`,
   },
 
+  // ─────────────────────────── INTERMÉDIAIRE ─────────────────────────────
+  {
+    id: 'ej-i01',
+    num: 'I01',
+    title: 'Gérer plusieurs onglets',
+    difficulty: 'intermediate',
+    description:
+      'Cliquez sur un lien qui ouvre un nouvel onglet. Capturez la nouvelle page avec `context.waitForEvent("page")` et vérifiez son URL.',
+    hint: 'Écoutez l\'événement `"page"` dans le contexte AVANT de cliquer sur le lien.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('gérer un nouvel onglet', async ({ page, context }) => {
+  await page.goto('https://the-internet.herokuapp.com/windows');
+  const [newPage] = await Promise.all([
+    context.waitForEvent('page'),
+    page.getByRole('link', { name: 'Click Here' }).click(),
+  ]);
+  await newPage.waitForLoadState();
+  await expect(newPage).toHaveURL(/new/);
+  await expect(newPage.getByRole('heading')).toContainText('New Window');
+});`,
+  },
+  {
+    id: 'ej-i02',
+    num: 'I02',
+    title: 'Intercepter les requêtes HTTP',
+    difficulty: 'intermediate',
+    description:
+      'Interceptez toutes les requêtes vers l\'API et enregistrez leurs URLs. Vérifiez qu\'au moins une requête vers l\'endpoint `/api/todos` a été effectuée.',
+    hint: 'Utilisez `page.on("request", cb)` pour écouter. Ou `page.waitForRequest(/motif/)` pour attendre une spécifique.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('intercepter les requêtes', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', req => requests.push(req.url()));
+
+  await page.goto('https://demo.playwright.dev/todomvc');
+  // Attendre le chargement et vérifier optionnellement
+  await page.waitForLoadState('networkidle');
+  // Si l'app effectue des appels API, vérifier :
+  // expect(requests.some(url => url.includes('/api/'))).toBe(true);
+  expect(requests.length).toBeGreaterThan(0);
+});`,
+  },
+  {
+    id: 'ej-i03',
+    num: 'I03',
+    title: 'Simuler une réponse HTTP',
+    difficulty: 'intermediate',
+    description:
+      'Interceptez l\'appel à un endpoint d\'API et renvoyez des données simulées. Vérifiez que la page affiche les données du mock.',
+    hint: 'Utilisez `page.route(url, handler)` et dans le handler appelez `route.fulfill({ json: {...} })`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('simuler une réponse d\'API', async ({ page }) => {
+  await page.route('**/api/users', async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([{ id: 1, name: 'Usuario Mock' }]),
+    });
+  });
+
+  await page.goto('https://mi-app.ejemplo.com/usuarios');
+  await expect(page.getByText('Usuario Mock')).toBeVisible();
+});`,
+  },
+  {
+    id: 'ej-i04',
+    num: 'I04',
+    title: 'Gérer les dialogues du navigateur',
+    difficulty: 'intermediate',
+    description:
+      'La page affiche une `alert`. Configurez un gestionnaire qui accepte automatiquement le dialogue et vérifiez le message qu\'il contenait.',
+    hint: 'Utilisez `page.on("dialog", dialog => { /* dialog.message(), dialog.accept() */ })`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('accepter une alert du navigateur', async ({ page }) => {
+  let alertMessage = '';
+  page.on('dialog', async dialog => {
+    alertMessage = dialog.message();
+    await dialog.accept();
+  });
+
+  await page.goto('https://the-internet.herokuapp.com/javascript_alerts');
+  await page.getByRole('button', { name: 'Click for JS Alert' }).click();
+  expect(alertMessage).toBe('I am a JS Alert');
+  await expect(page.locator('#result')).toContainText('You successfully clicked an alert');
+});`,
+  },
+  {
+    id: 'ej-i05',
+    num: 'I05',
+    title: 'Téléverser un fichier',
+    difficulty: 'intermediate',
+    description:
+      'Trouvez un input de type file sur une page. Téléversez un fichier de test et vérifiez que le nom du fichier apparaît sur la page.',
+    hint: 'Utilisez `locator.setInputFiles("chemin/vers/fichier.txt")` pour simuler le téléversement.',
+    solution: `import { test, expect } from '@playwright/test';
+import path from 'path';
+
+test('téléverser un fichier', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/upload');
+  await page.setInputFiles('#file-upload', path.join(__dirname, 'fixture.txt'));
+  await page.getByRole('button', { name: 'Upload' }).click();
+  await expect(page.locator('#uploaded-files')).toContainText('fixture.txt');
+});`,
+  },
+  {
+    id: 'ej-i06',
+    num: 'I06',
+    title: 'Glisser-déposer (drag & drop)',
+    difficulty: 'intermediate',
+    description:
+      'Sur une page avec des éléments glissables, déplacez un élément de la colonne A vers la colonne B et vérifiez le nouvel ordre.',
+    hint: 'Utilisez `locator.dragTo(target)` pour un glisser-déposer simple entre deux locators.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('glisser-déposer', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/drag_and_drop');
+  const columnA = page.locator('#column-a');
+  const columnB = page.locator('#column-b');
+
+  await columnA.dragTo(columnB);
+
+  await expect(columnA.locator('header')).toHaveText('B');
+  await expect(columnB.locator('header')).toHaveText('A');
+});`,
+  },
+  {
+    id: 'ej-i07',
+    num: 'I07',
+    title: 'Travailler avec les iframes',
+    difficulty: 'intermediate',
+    description:
+      'Trouvez un iframe dans la page. Accédez à son contenu, interagissez avec un élément à l\'intérieur et vérifiez le résultat.',
+    hint: 'Utilisez `page.frameLocator("iframe")` pour obtenir un frame locator, puis opérez dessus normalement.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('interagir avec un iframe', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/iframe');
+  const frame = page.frameLocator('#mce_0_ifr');
+  await frame.locator('body').fill('Texto dentro del iframe');
+  await expect(frame.locator('body')).toContainText('Texto dentro del iframe');
+});`,
+  },
+  {
+    id: 'ej-i08',
+    num: 'I08',
+    title: 'Implémenter le Page Object Model basique',
+    difficulty: 'intermediate',
+    description:
+      'Créez une classe `TodoPage` qui encapsule les actions de la démo TodoMVC : `addTask(text)`, `completeTask(index)`, `getTaskCount()`. Écrivez un test qui utilise cette classe.',
+    hint: 'La classe reçoit `page` dans le constructeur. Les méthodes utilisent `this.page.locator(...)`.',
+    solution: `import { test, expect, Page } from '@playwright/test';
+
+class TodoPage {
+  constructor(private page: Page) {}
+
+  async goto() { await this.page.goto('https://demo.playwright.dev/todomvc'); }
+  async addTask(text: string) {
+    await this.page.getByPlaceholder('What needs to be done?').fill(text);
+    await this.page.getByPlaceholder('What needs to be done?').press('Enter');
+  }
+  async completeTask(index: number) {
+    await this.page.locator('.todo-list li .toggle').nth(index).click();
+  }
+  async getTaskCount() {
+    return this.page.locator('.todo-list li').count();
+  }
+}
+
+test('POM basique', async ({ page }) => {
+  const todo = new TodoPage(page);
+  await todo.goto();
+  await todo.addTask('Primera');
+  await todo.addTask('Segunda');
+  await todo.completeTask(0);
+  expect(await todo.getTaskCount()).toBe(2);
+  await expect(page.locator('.todo-list li').first()).toHaveClass(/completed/);
+});`,
+  },
+  {
+    id: 'ej-i09',
+    num: 'I09',
+    title: 'Attentes conditionnelles avec waitFor',
+    difficulty: 'intermediate',
+    description:
+      'Attendez qu\'un élément change d\'état : d\'abord un loader apparaît, puis il disparaît et le contenu apparaît. Attendez chaque transition explicitement.',
+    hint: 'Combinez `locator.waitFor({ state: "hidden" })` et `locator.waitFor({ state: "visible" })`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('attendre la transition loader → contenu', async ({ page }) => {
+  await page.goto('https://the-internet.herokuapp.com/dynamic_loading/2');
+  await page.getByRole('button', { name: 'Start' }).click();
+
+  const loader = page.locator('#loading');
+  await loader.waitFor({ state: 'visible' });
+  await loader.waitFor({ state: 'hidden' });
+
+  const finish = page.locator('#finish');
+  await expect(finish).toBeVisible();
+  await expect(finish).toContainText('Hello World!');
+});`,
+  },
+  {
+    id: 'ej-i10',
+    num: 'I10',
+    title: 'Simuler un appareil mobile',
+    difficulty: 'intermediate',
+    description:
+      'Exécutez un test en simulant un iPhone 12. Vérifiez que la page affiche le menu hamburger au lieu du menu de bureau.',
+    hint: 'Utilisez `devices["iPhone 12"]` de Playwright et passez-le à `browser.newContext({ ...devices["iPhone 12"] })`.',
+    solution: `import { test, expect, devices } from '@playwright/test';
+
+test('vue mobile iPhone 12', async ({ browser }) => {
+  const context = await browser.newContext({ ...devices['iPhone 12'] });
+  const page = await context.newPage();
+
+  await page.goto('https://playwright.dev');
+  // Vérifie que le header est responsive
+  const viewport = page.viewportSize();
+  expect(viewport?.width).toBe(390);
+  await context.close();
+});`,
+  },
+  {
+    id: 'ej-i11',
+    num: 'I11',
+    title: 'Gérer l\'authentification HTTP Basic',
+    difficulty: 'intermediate',
+    description:
+      'Accédez à `https://practice.expandtesting.com/basic-auth` protégée par HTTP Basic Auth. Les identifiants du site sont documentés sur sa page : utilisateur `practice` et le mot de passe indiqué sur le site. Vérifiez le message de bienvenue.',
+    hint: 'Utilisez `browser.newContext({ httpCredentials: { username, password } })`. Stockez les identifiants dans des variables d\'environnement, pas dans le code.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('authentification HTTP Basic sur practice.expandtesting.com', async ({ browser }) => {
+  // Identifiants publiés sur practice.expandtesting.com/basic-auth
+  // Stockez dans .env : BASIC_USER=practice  BASIC_PASS=<voir le site>
+  const context = await browser.newContext({
+    httpCredentials: {
+      username: process.env.BASIC_USER ?? 'practice',
+      password: process.env.BASIC_PASS ?? '',
+    },
+  });
+  const page = await context.newPage();
+  await page.goto('https://practice.expandtesting.com/basic-auth');
+  await expect(page.locator('p')).toContainText('Congratulations');
+  await context.close();
+});`,
+  },
+  {
+    id: 'ej-i12',
+    num: 'I12',
+    title: 'Paramétrer les tests avec test.each',
+    difficulty: 'intermediate',
+    description:
+      'Écrivez un test paramétré qui vérifie que 5 URLs distinctes répondent avec le status 200 et contiennent un `<h1>`.',
+    hint: 'Utilisez `test.each([ [url1], [url2], ... ])("description %s", async ({ page }, url) => { ... })`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+const urls = [
+  'https://playwright.dev',
+  'https://playwright.dev/docs/intro',
+  'https://playwright.dev/docs/api/class-page',
+];
+
+test.each(urls)('la page %s a un en-tête', async ({ page }, url) => {
+  await page.goto(url);
+  await expect(page.locator('h1').first()).toBeVisible();
+});`,
+  },
+  {
+    id: 'ej-i13',
+    num: 'I13',
+    title: 'Utiliser beforeEach et afterEach',
+    difficulty: 'intermediate',
+    description:
+      'Créez une suite de tests pour TodoMVC où `beforeEach` navigue et ajoute une tâche de base, et `afterEach` vérifie qu\'il n\'y a pas eu d\'erreurs dans la console.',
+    hint: '`test.beforeEach` et `test.afterEach` reçoivent le même objet `{ page }` que les tests.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test.describe('Suite TodoMVC', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('https://demo.playwright.dev/todomvc');
+    await page.getByPlaceholder('What needs to be done?').fill('Tarea base');
+    await page.getByPlaceholder('What needs to be done?').press('Enter');
+  });
+
+  test('la tâche de base est visible', async ({ page }) => {
+    await expect(page.getByText('Tarea base')).toBeVisible();
+  });
+
+  test('la tâche de base peut être complétée', async ({ page }) => {
+    await page.locator('.todo-list li .toggle').click();
+    await expect(page.locator('.todo-list li')).toHaveClass(/completed/);
+  });
+});`,
+  },
+  {
+    id: 'ej-i14',
+    num: 'I14',
+    title: 'Lire et écrire dans le localStorage',
+    difficulty: 'intermediate',
+    description:
+      'Avant de charger la page, pré-remplissez le `localStorage` avec des données de session. Vérifiez que la page les lit et affiche l\'utilisateur comme s\'il était authentifié.',
+    hint: 'Utilisez `page.addInitScript(() => { localStorage.setItem(key, value) })` avant `page.goto()`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('pré-remplir le localStorage', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('user', JSON.stringify({ name: 'Test User', token: 'abc123' }));
+  });
+
+  await page.goto('https://mi-app.ejemplo.com');
+  // L'app lit le token et affiche l'utilisateur :
+  await expect(page.getByText('Test User')).toBeVisible();
+});`,
+  },
+  {
+    id: 'ej-i15',
+    num: 'I15',
+    title: 'Vérifier la réponse d\'API avec waitForResponse',
+    difficulty: 'intermediate',
+    description:
+      'Attendez la réponse d\'un endpoint spécifique lors du chargement de la page. Vérifiez que le statut est 200 et que le body JSON contient les propriétés attendues.',
+    hint: 'Utilisez `page.waitForResponse(urlOrPredicate)` avant l\'action qui déclenche l\'appel.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('vérifier la réponse d\'API sur practice.expandtesting.com', async ({ page }) => {
+  // L'API de notes renvoie du JSON — d'abord on se connecte pour obtenir le token
+  const [response] = await Promise.all([
+    page.waitForResponse(res =>
+      res.url().includes('/notes/api/users/login') && res.status() === 200
+    ),
+    page.goto('https://practice.expandtesting.com/login'),
+  ]);
+
+  // Après le chargement du login, on vérifie que la réponse de l'API a la structure attendue
+  // (En flux réel : remplir le formulaire, cliquer sur Login, capturer la réponse POST /login)
+  // Ici on vérifie la réponse de la requête initiale de la page :
+  const status = response.status();
+  expect([200, 302, 404].includes(status)).toBe(true);
+});`,
+  },
+  {
+    id: 'ej-i16',
+    num: 'I16',
+    title: 'Locators enchaînés et filtres',
+    difficulty: 'intermediate',
+    description:
+      'Dans un tableau HTML, trouvez la ligne qui contient le nom "Ana García" et cliquez sur le bouton "Editar" de cette ligne spécifique.',
+    hint: 'Utilisez `page.getByRole("row").filter({ hasText: "Ana García" }).getByRole("button", { name: "Editar" })`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('locator enchaîné dans un tableau', async ({ page }) => {
+  await page.goto('https://mi-tabla.ejemplo.com');
+  const fila = page.getByRole('row').filter({ hasText: 'Ana García' });
+  await fila.getByRole('button', { name: 'Editar' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('dialog')).toContainText('Ana García');
+});`,
+  },
+  {
+    id: 'ej-i17',
+    num: 'I17',
+    title: 'Utiliser des fixtures personnalisées',
+    difficulty: 'intermediate',
+    description:
+      'Créez un fixture `authenticatedPage` qui navigue et effectue le login automatiquement. Utilisez-le dans plusieurs tests pour ne pas répéter le flux d\'authentification.',
+    hint: 'Étendez `test` avec `test.extend({ myFixture: async ({ page }, use) => { ... await use(page); } })`.',
+    solution: `import { test as base, expect } from '@playwright/test';
+
+// D'abord enregistrez un utilisateur sur /register, puis utilisez ces identifiants ici
+const test = base.extend<{ loggedPage: typeof base['prototype'] }>({
+  loggedPage: async ({ page }, use) => {
+    await page.goto('https://practice.expandtesting.com/login');
+    await page.getByPlaceholder('Email').fill('tu-email@test.com');
+    await page.getByPlaceholder('Password').fill('Tu1234!');
+    await page.getByRole('button', { name: 'Login' }).click();
+    await page.waitForURL('https://practice.expandtesting.com/notes');
+    await use(page);
+  },
+});
+
+test('voir les notes de l\'utilisateur authentifié', async ({ loggedPage }) => {
+  await expect(loggedPage).toHaveURL(/notes/);
+  await expect(loggedPage.getByRole('heading', { name: /notes|mis notas/i })).toBeVisible();
+});`,
+  },
+  {
+    id: 'ej-i18',
+    num: 'I18',
+    title: 'Gérer les cookies de session',
+    difficulty: 'intermediate',
+    description:
+      'Enregistrez les cookies après un login réussi. Dans un second contexte, chargez ces cookies et vérifiez que l\'utilisateur est toujours authentifié sans refaire le login.',
+    hint: 'Utilisez `context.cookies()` pour sauvegarder et `context.addCookies(cookies)` pour les restaurer.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('persistance de session sur practice.expandtesting.com', async ({ browser }) => {
+  // Contexte 1 : login → sauvegarder les cookies
+  const ctx1 = await browser.newContext();
+  const page1 = await ctx1.newPage();
+  await page1.goto('https://practice.expandtesting.com/login');
+  await page1.getByPlaceholder('Email').fill('tu-email@test.com');
+  await page1.getByPlaceholder('Password').fill('Tu1234!');
+  await page1.getByRole('button', { name: 'Login' }).click();
+  await page1.waitForURL('https://practice.expandtesting.com/notes');
+  const cookies = await ctx1.cookies();
+  await ctx1.close();
+
+  // Contexte 2 : restaurer les cookies → accéder directement à /notes sans login
+  const ctx2 = await browser.newContext();
+  await ctx2.addCookies(cookies);
+  const page2 = await ctx2.newPage();
+  await page2.goto('https://practice.expandtesting.com/notes');
+  // Si les cookies sont valides, pas de redirection vers le login :
+  await expect(page2).toHaveURL(/notes/);
+  await ctx2.close();
+});`,
+  },
+  {
+    id: 'ej-i19',
+    num: 'I19',
+    title: 'Assertions douces — ne pas avorter au premier échec',
+    difficulty: 'intermediate',
+    description:
+      'Utilisez les soft assertions pour vérifier plusieurs propriétés d\'un formulaire. À la fin du test, tous les échecs sont reportés ensemble au lieu d\'avorter au premier.',
+    hint: 'Utilisez `expect.soft(locator).matcher()`. Le test continue même en cas d\'échec. À la fin, Playwright les reporte tous.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('soft assertions sur le formulaire d\'inscription', async ({ page }) => {
+  await page.goto('https://practice.expandtesting.com/register');
+
+  await expect.soft(page.getByPlaceholder('Name')).toBeVisible();
+  await expect.soft(page.getByPlaceholder('Email')).toBeEnabled();
+  await expect.soft(page.getByPlaceholder('Password')).toHaveAttribute('type', 'password');
+  await expect.soft(page.getByPlaceholder('Confirm Password')).toHaveAttribute('type', 'password');
+  await expect.soft(page.getByRole('button', { name: 'Register' })).toBeVisible();
+
+  // Le test reporte tous les échecs ensemble à la fin
+});`,
+  },
+  {
+    id: 'ej-i20',
+    num: 'I20',
+    title: 'Exécuter du JavaScript dans la page',
+    difficulty: 'intermediate',
+    description:
+      'Utilisez `page.evaluate()` pour exécuter du code JavaScript directement dans le contexte de la page et obtenir des informations qui ne sont pas dans le DOM (p. ex., une variable globale ou le résultat d\'un calcul).',
+    hint: '`page.evaluate(fn)` exécute `fn` dans le contexte du navigateur et renvoie le résultat sérialisé.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('exécuter du JS dans le navigateur', async ({ page }) => {
+  await page.goto('https://playwright.dev');
+
+  const devicePixelRatio = await page.evaluate(() => window.devicePixelRatio);
+  expect(typeof devicePixelRatio).toBe('number');
+
+  const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
+  expect(scrollHeight).toBeGreaterThan(500);
+});`,
+  },
+  {
+    id: 'ej-i21',
+    num: 'I21',
+    title: 'Prendre des captures d\'écran comparatives',
+    difficulty: 'intermediate',
+    description:
+      'Utilisez le matcher `toHaveScreenshot()` pour faire une comparaison visuelle d\'un composant. La première fois, il crée le snapshot de référence ; les suivantes détectent les différences.',
+    hint: 'Lors de la première exécution, lancez avec `--update-snapshots` pour créer le baseline. Ensuite, lancez normalement.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('régression visuelle du header', async ({ page }) => {
+  await page.goto('https://playwright.dev');
+  await expect(page.locator('header').first()).toHaveScreenshot('header-baseline.png', {
+    maxDiffPixels: 10,
+  });
+});`,
+  },
+  {
+    id: 'ej-i22',
+    num: 'I22',
+    title: 'Bloquer et rediriger les requêtes',
+    difficulty: 'intermediate',
+    description:
+      'Bloquez toutes les requêtes d\'images pour accélérer le chargement de la page. Vérifiez que la page charge tout aussi bien sans images.',
+    hint: 'Utilisez `page.route("**/*.{png,jpg,jpeg,webp,gif}", route => route.abort())`.',
+    solution: `import { test, expect } from '@playwright/test';
+
+test('bloquer les images pour accélérer le chargement', async ({ page }) => {
+  await page.route('**/*.{png,jpg,jpeg,webp,gif,svg}', route => route.abort());
+
+  await page.goto('https://playwright.dev');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  // La page a chargé sans images
+  const images = await page.locator('img').all();
+  // Les images existent dans le DOM mais leur src a été bloqué
+  expect(images.length).toBeGreaterThanOrEqual(0);
+});`,
+  },
   // ─────────────────────────── AVANCÉ ──────────────────────────────────────
   {
     id: 'ej-a01',
@@ -1213,506 +1715,4 @@ test('checkout complet avec paiement simulé', async ({ page }) => {
 });`,
   },
 
-  // ─────────────────────────── INTERMÉDIAIRE ─────────────────────────────
-  {
-    id: 'ej-i01',
-    num: 'I01',
-    title: 'Gérer plusieurs onglets',
-    difficulty: 'intermediate',
-    description:
-      'Cliquez sur un lien qui ouvre un nouvel onglet. Capturez la nouvelle page avec `context.waitForEvent("page")` et vérifiez son URL.',
-    hint: 'Écoutez l\'événement `"page"` dans le contexte AVANT de cliquer sur le lien.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('gérer un nouvel onglet', async ({ page, context }) => {
-  await page.goto('https://the-internet.herokuapp.com/windows');
-  const [newPage] = await Promise.all([
-    context.waitForEvent('page'),
-    page.getByRole('link', { name: 'Click Here' }).click(),
-  ]);
-  await newPage.waitForLoadState();
-  await expect(newPage).toHaveURL(/new/);
-  await expect(newPage.getByRole('heading')).toContainText('New Window');
-});`,
-  },
-  {
-    id: 'ej-i02',
-    num: 'I02',
-    title: 'Intercepter les requêtes HTTP',
-    difficulty: 'intermediate',
-    description:
-      'Interceptez toutes les requêtes vers l\'API et enregistrez leurs URLs. Vérifiez qu\'au moins une requête vers l\'endpoint `/api/todos` a été effectuée.',
-    hint: 'Utilisez `page.on("request", cb)` pour écouter. Ou `page.waitForRequest(/motif/)` pour attendre une spécifique.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('intercepter les requêtes', async ({ page }) => {
-  const requests: string[] = [];
-  page.on('request', req => requests.push(req.url()));
-
-  await page.goto('https://demo.playwright.dev/todomvc');
-  // Attendre le chargement et vérifier optionnellement
-  await page.waitForLoadState('networkidle');
-  // Si l'app effectue des appels API, vérifier :
-  // expect(requests.some(url => url.includes('/api/'))).toBe(true);
-  expect(requests.length).toBeGreaterThan(0);
-});`,
-  },
-  {
-    id: 'ej-i03',
-    num: 'I03',
-    title: 'Simuler une réponse HTTP',
-    difficulty: 'intermediate',
-    description:
-      'Interceptez l\'appel à un endpoint d\'API et renvoyez des données simulées. Vérifiez que la page affiche les données du mock.',
-    hint: 'Utilisez `page.route(url, handler)` et dans le handler appelez `route.fulfill({ json: {...} })`.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('simuler une réponse d\'API', async ({ page }) => {
-  await page.route('**/api/users', async route => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify([{ id: 1, name: 'Usuario Mock' }]),
-    });
-  });
-
-  await page.goto('https://mi-app.ejemplo.com/usuarios');
-  await expect(page.getByText('Usuario Mock')).toBeVisible();
-});`,
-  },
-  {
-    id: 'ej-i04',
-    num: 'I04',
-    title: 'Gérer les dialogues du navigateur',
-    difficulty: 'intermediate',
-    description:
-      'La page affiche une `alert`. Configurez un gestionnaire qui accepte automatiquement le dialogue et vérifiez le message qu\'il contenait.',
-    hint: 'Utilisez `page.on("dialog", dialog => { /* dialog.message(), dialog.accept() */ })`.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('accepter une alert du navigateur', async ({ page }) => {
-  let alertMessage = '';
-  page.on('dialog', async dialog => {
-    alertMessage = dialog.message();
-    await dialog.accept();
-  });
-
-  await page.goto('https://the-internet.herokuapp.com/javascript_alerts');
-  await page.getByRole('button', { name: 'Click for JS Alert' }).click();
-  expect(alertMessage).toBe('I am a JS Alert');
-  await expect(page.locator('#result')).toContainText('You successfully clicked an alert');
-});`,
-  },
-  {
-    id: 'ej-i05',
-    num: 'I05',
-    title: 'Téléverser un fichier',
-    difficulty: 'intermediate',
-    description:
-      'Trouvez un input de type file sur une page. Téléversez un fichier de test et vérifiez que le nom du fichier apparaît sur la page.',
-    hint: 'Utilisez `locator.setInputFiles("chemin/vers/fichier.txt")` pour simuler le téléversement.',
-    solution: `import { test, expect } from '@playwright/test';
-import path from 'path';
-
-test('téléverser un fichier', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/upload');
-  await page.setInputFiles('#file-upload', path.join(__dirname, 'fixture.txt'));
-  await page.getByRole('button', { name: 'Upload' }).click();
-  await expect(page.locator('#uploaded-files')).toContainText('fixture.txt');
-});`,
-  },
-  {
-    id: 'ej-i06',
-    num: 'I06',
-    title: 'Glisser-déposer (drag & drop)',
-    difficulty: 'intermediate',
-    description:
-      'Sur une page avec des éléments glissables, déplacez un élément de la colonne A vers la colonne B et vérifiez le nouvel ordre.',
-    hint: 'Utilisez `locator.dragTo(target)` pour un glisser-déposer simple entre deux locators.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('glisser-déposer', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/drag_and_drop');
-  const columnA = page.locator('#column-a');
-  const columnB = page.locator('#column-b');
-
-  await columnA.dragTo(columnB);
-
-  await expect(columnA.locator('header')).toHaveText('B');
-  await expect(columnB.locator('header')).toHaveText('A');
-});`,
-  },
-  {
-    id: 'ej-i07',
-    num: 'I07',
-    title: 'Travailler avec les iframes',
-    difficulty: 'intermediate',
-    description:
-      'Trouvez un iframe dans la page. Accédez à son contenu, interagissez avec un élément à l\'intérieur et vérifiez le résultat.',
-    hint: 'Utilisez `page.frameLocator("iframe")` pour obtenir un frame locator, puis opérez dessus normalement.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('interagir avec un iframe', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/iframe');
-  const frame = page.frameLocator('#mce_0_ifr');
-  await frame.locator('body').fill('Texto dentro del iframe');
-  await expect(frame.locator('body')).toContainText('Texto dentro del iframe');
-});`,
-  },
-  {
-    id: 'ej-i08',
-    num: 'I08',
-    title: 'Implémenter le Page Object Model basique',
-    difficulty: 'intermediate',
-    description:
-      'Créez une classe `TodoPage` qui encapsule les actions de la démo TodoMVC : `addTask(text)`, `completeTask(index)`, `getTaskCount()`. Écrivez un test qui utilise cette classe.',
-    hint: 'La classe reçoit `page` dans le constructeur. Les méthodes utilisent `this.page.locator(...)`.',
-    solution: `import { test, expect, Page } from '@playwright/test';
-
-class TodoPage {
-  constructor(private page: Page) {}
-
-  async goto() { await this.page.goto('https://demo.playwright.dev/todomvc'); }
-  async addTask(text: string) {
-    await this.page.getByPlaceholder('What needs to be done?').fill(text);
-    await this.page.getByPlaceholder('What needs to be done?').press('Enter');
-  }
-  async completeTask(index: number) {
-    await this.page.locator('.todo-list li .toggle').nth(index).click();
-  }
-  async getTaskCount() {
-    return this.page.locator('.todo-list li').count();
-  }
-}
-
-test('POM basique', async ({ page }) => {
-  const todo = new TodoPage(page);
-  await todo.goto();
-  await todo.addTask('Primera');
-  await todo.addTask('Segunda');
-  await todo.completeTask(0);
-  expect(await todo.getTaskCount()).toBe(2);
-  await expect(page.locator('.todo-list li').first()).toHaveClass(/completed/);
-});`,
-  },
-  {
-    id: 'ej-i09',
-    num: 'I09',
-    title: 'Attentes conditionnelles avec waitFor',
-    difficulty: 'intermediate',
-    description:
-      'Attendez qu\'un élément change d\'état : d\'abord un loader apparaît, puis il disparaît et le contenu apparaît. Attendez chaque transition explicitement.',
-    hint: 'Combinez `locator.waitFor({ state: "hidden" })` et `locator.waitFor({ state: "visible" })`.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('attendre la transition loader → contenu', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/dynamic_loading/2');
-  await page.getByRole('button', { name: 'Start' }).click();
-
-  const loader = page.locator('#loading');
-  await loader.waitFor({ state: 'visible' });
-  await loader.waitFor({ state: 'hidden' });
-
-  const finish = page.locator('#finish');
-  await expect(finish).toBeVisible();
-  await expect(finish).toContainText('Hello World!');
-});`,
-  },
-  {
-    id: 'ej-i10',
-    num: 'I10',
-    title: 'Simuler un appareil mobile',
-    difficulty: 'intermediate',
-    description:
-      'Exécutez un test en simulant un iPhone 12. Vérifiez que la page affiche le menu hamburger au lieu du menu de bureau.',
-    hint: 'Utilisez `devices["iPhone 12"]` de Playwright et passez-le à `browser.newContext({ ...devices["iPhone 12"] })`.',
-    solution: `import { test, expect, devices } from '@playwright/test';
-
-test('vue mobile iPhone 12', async ({ browser }) => {
-  const context = await browser.newContext({ ...devices['iPhone 12'] });
-  const page = await context.newPage();
-
-  await page.goto('https://playwright.dev');
-  // Vérifie que le header est responsive
-  const viewport = page.viewportSize();
-  expect(viewport?.width).toBe(390);
-  await context.close();
-});`,
-  },
-  {
-    id: 'ej-i11',
-    num: 'I11',
-    title: 'Gérer l\'authentification HTTP Basic',
-    difficulty: 'intermediate',
-    description:
-      'Accédez à `https://practice.expandtesting.com/basic-auth` protégée par HTTP Basic Auth. Les identifiants du site sont documentés sur sa page : utilisateur `practice` et le mot de passe indiqué sur le site. Vérifiez le message de bienvenue.',
-    hint: 'Utilisez `browser.newContext({ httpCredentials: { username, password } })`. Stockez les identifiants dans des variables d\'environnement, pas dans le code.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('authentification HTTP Basic sur practice.expandtesting.com', async ({ browser }) => {
-  // Identifiants publiés sur practice.expandtesting.com/basic-auth
-  // Stockez dans .env : BASIC_USER=practice  BASIC_PASS=<voir le site>
-  const context = await browser.newContext({
-    httpCredentials: {
-      username: process.env.BASIC_USER ?? 'practice',
-      password: process.env.BASIC_PASS ?? '',
-    },
-  });
-  const page = await context.newPage();
-  await page.goto('https://practice.expandtesting.com/basic-auth');
-  await expect(page.locator('p')).toContainText('Congratulations');
-  await context.close();
-});`,
-  },
-  {
-    id: 'ej-i12',
-    num: 'I12',
-    title: 'Paramétrer les tests avec test.each',
-    difficulty: 'intermediate',
-    description:
-      'Écrivez un test paramétré qui vérifie que 5 URLs distinctes répondent avec le status 200 et contiennent un `<h1>`.',
-    hint: 'Utilisez `test.each([ [url1], [url2], ... ])("description %s", async ({ page }, url) => { ... })`.',
-    solution: `import { test, expect } from '@playwright/test';
-
-const urls = [
-  'https://playwright.dev',
-  'https://playwright.dev/docs/intro',
-  'https://playwright.dev/docs/api/class-page',
-];
-
-test.each(urls)('la page %s a un en-tête', async ({ page }, url) => {
-  await page.goto(url);
-  await expect(page.locator('h1').first()).toBeVisible();
-});`,
-  },
-  {
-    id: 'ej-i13',
-    num: 'I13',
-    title: 'Utiliser beforeEach et afterEach',
-    difficulty: 'intermediate',
-    description:
-      'Créez une suite de tests pour TodoMVC où `beforeEach` navigue et ajoute une tâche de base, et `afterEach` vérifie qu\'il n\'y a pas eu d\'erreurs dans la console.',
-    hint: '`test.beforeEach` et `test.afterEach` reçoivent le même objet `{ page }` que les tests.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test.describe('Suite TodoMVC', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('https://demo.playwright.dev/todomvc');
-    await page.getByPlaceholder('What needs to be done?').fill('Tarea base');
-    await page.getByPlaceholder('What needs to be done?').press('Enter');
-  });
-
-  test('la tâche de base est visible', async ({ page }) => {
-    await expect(page.getByText('Tarea base')).toBeVisible();
-  });
-
-  test('la tâche de base peut être complétée', async ({ page }) => {
-    await page.locator('.todo-list li .toggle').click();
-    await expect(page.locator('.todo-list li')).toHaveClass(/completed/);
-  });
-});`,
-  },
-  {
-    id: 'ej-i14',
-    num: 'I14',
-    title: 'Lire et écrire dans le localStorage',
-    difficulty: 'intermediate',
-    description:
-      'Avant de charger la page, pré-remplissez le `localStorage` avec des données de session. Vérifiez que la page les lit et affiche l\'utilisateur comme s\'il était authentifié.',
-    hint: 'Utilisez `page.addInitScript(() => { localStorage.setItem(key, value) })` avant `page.goto()`.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('pré-remplir le localStorage', async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem('user', JSON.stringify({ name: 'Test User', token: 'abc123' }));
-  });
-
-  await page.goto('https://mi-app.ejemplo.com');
-  // L'app lit le token et affiche l'utilisateur :
-  await expect(page.getByText('Test User')).toBeVisible();
-});`,
-  },
-  {
-    id: 'ej-i15',
-    num: 'I15',
-    title: 'Vérifier la réponse d\'API avec waitForResponse',
-    difficulty: 'intermediate',
-    description:
-      'Attendez la réponse d\'un endpoint spécifique lors du chargement de la page. Vérifiez que le statut est 200 et que le body JSON contient les propriétés attendues.',
-    hint: 'Utilisez `page.waitForResponse(urlOrPredicate)` avant l\'action qui déclenche l\'appel.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('vérifier la réponse d\'API sur practice.expandtesting.com', async ({ page }) => {
-  // L'API de notes renvoie du JSON — d'abord on se connecte pour obtenir le token
-  const [response] = await Promise.all([
-    page.waitForResponse(res =>
-      res.url().includes('/notes/api/users/login') && res.status() === 200
-    ),
-    page.goto('https://practice.expandtesting.com/login'),
-  ]);
-
-  // Après le chargement du login, on vérifie que la réponse de l'API a la structure attendue
-  // (En flux réel : remplir le formulaire, cliquer sur Login, capturer la réponse POST /login)
-  // Ici on vérifie la réponse de la requête initiale de la page :
-  const status = response.status();
-  expect([200, 302, 404].includes(status)).toBe(true);
-});`,
-  },
-  {
-    id: 'ej-i16',
-    num: 'I16',
-    title: 'Locators enchaînés et filtres',
-    difficulty: 'intermediate',
-    description:
-      'Dans un tableau HTML, trouvez la ligne qui contient le nom "Ana García" et cliquez sur le bouton "Editar" de cette ligne spécifique.',
-    hint: 'Utilisez `page.getByRole("row").filter({ hasText: "Ana García" }).getByRole("button", { name: "Editar" })`.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('locator enchaîné dans un tableau', async ({ page }) => {
-  await page.goto('https://mi-tabla.ejemplo.com');
-  const fila = page.getByRole('row').filter({ hasText: 'Ana García' });
-  await fila.getByRole('button', { name: 'Editar' }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByRole('dialog')).toContainText('Ana García');
-});`,
-  },
-  {
-    id: 'ej-i17',
-    num: 'I17',
-    title: 'Utiliser des fixtures personnalisées',
-    difficulty: 'intermediate',
-    description:
-      'Créez un fixture `authenticatedPage` qui navigue et effectue le login automatiquement. Utilisez-le dans plusieurs tests pour ne pas répéter le flux d\'authentification.',
-    hint: 'Étendez `test` avec `test.extend({ myFixture: async ({ page }, use) => { ... await use(page); } })`.',
-    solution: `import { test as base, expect } from '@playwright/test';
-
-// D'abord enregistrez un utilisateur sur /register, puis utilisez ces identifiants ici
-const test = base.extend<{ loggedPage: typeof base['prototype'] }>({
-  loggedPage: async ({ page }, use) => {
-    await page.goto('https://practice.expandtesting.com/login');
-    await page.getByPlaceholder('Email').fill('tu-email@test.com');
-    await page.getByPlaceholder('Password').fill('Tu1234!');
-    await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL('https://practice.expandtesting.com/notes');
-    await use(page);
-  },
-});
-
-test('voir les notes de l\'utilisateur authentifié', async ({ loggedPage }) => {
-  await expect(loggedPage).toHaveURL(/notes/);
-  await expect(loggedPage.getByRole('heading', { name: /notes|mis notas/i })).toBeVisible();
-});`,
-  },
-  {
-    id: 'ej-i18',
-    num: 'I18',
-    title: 'Gérer les cookies de session',
-    difficulty: 'intermediate',
-    description:
-      'Enregistrez les cookies après un login réussi. Dans un second contexte, chargez ces cookies et vérifiez que l\'utilisateur est toujours authentifié sans refaire le login.',
-    hint: 'Utilisez `context.cookies()` pour sauvegarder et `context.addCookies(cookies)` pour les restaurer.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('persistance de session sur practice.expandtesting.com', async ({ browser }) => {
-  // Contexte 1 : login → sauvegarder les cookies
-  const ctx1 = await browser.newContext();
-  const page1 = await ctx1.newPage();
-  await page1.goto('https://practice.expandtesting.com/login');
-  await page1.getByPlaceholder('Email').fill('tu-email@test.com');
-  await page1.getByPlaceholder('Password').fill('Tu1234!');
-  await page1.getByRole('button', { name: 'Login' }).click();
-  await page1.waitForURL('https://practice.expandtesting.com/notes');
-  const cookies = await ctx1.cookies();
-  await ctx1.close();
-
-  // Contexte 2 : restaurer les cookies → accéder directement à /notes sans login
-  const ctx2 = await browser.newContext();
-  await ctx2.addCookies(cookies);
-  const page2 = await ctx2.newPage();
-  await page2.goto('https://practice.expandtesting.com/notes');
-  // Si les cookies sont valides, pas de redirection vers le login :
-  await expect(page2).toHaveURL(/notes/);
-  await ctx2.close();
-});`,
-  },
-  {
-    id: 'ej-i19',
-    num: 'I19',
-    title: 'Assertions douces — ne pas avorter au premier échec',
-    difficulty: 'intermediate',
-    description:
-      'Utilisez les soft assertions pour vérifier plusieurs propriétés d\'un formulaire. À la fin du test, tous les échecs sont reportés ensemble au lieu d\'avorter au premier.',
-    hint: 'Utilisez `expect.soft(locator).matcher()`. Le test continue même en cas d\'échec. À la fin, Playwright les reporte tous.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('soft assertions sur le formulaire d\'inscription', async ({ page }) => {
-  await page.goto('https://practice.expandtesting.com/register');
-
-  await expect.soft(page.getByPlaceholder('Name')).toBeVisible();
-  await expect.soft(page.getByPlaceholder('Email')).toBeEnabled();
-  await expect.soft(page.getByPlaceholder('Password')).toHaveAttribute('type', 'password');
-  await expect.soft(page.getByPlaceholder('Confirm Password')).toHaveAttribute('type', 'password');
-  await expect.soft(page.getByRole('button', { name: 'Register' })).toBeVisible();
-
-  // Le test reporte tous les échecs ensemble à la fin
-});`,
-  },
-  {
-    id: 'ej-i20',
-    num: 'I20',
-    title: 'Exécuter du JavaScript dans la page',
-    difficulty: 'intermediate',
-    description:
-      'Utilisez `page.evaluate()` pour exécuter du code JavaScript directement dans le contexte de la page et obtenir des informations qui ne sont pas dans le DOM (p. ex., une variable globale ou le résultat d\'un calcul).',
-    hint: '`page.evaluate(fn)` exécute `fn` dans le contexte du navigateur et renvoie le résultat sérialisé.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('exécuter du JS dans le navigateur', async ({ page }) => {
-  await page.goto('https://playwright.dev');
-
-  const devicePixelRatio = await page.evaluate(() => window.devicePixelRatio);
-  expect(typeof devicePixelRatio).toBe('number');
-
-  const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
-  expect(scrollHeight).toBeGreaterThan(500);
-});`,
-  },
-  {
-    id: 'ej-i21',
-    num: 'I21',
-    title: 'Prendre des captures d\'écran comparatives',
-    difficulty: 'intermediate',
-    description:
-      'Utilisez le matcher `toHaveScreenshot()` pour faire une comparaison visuelle d\'un composant. La première fois, il crée le snapshot de référence ; les suivantes détectent les différences.',
-    hint: 'Lors de la première exécution, lancez avec `--update-snapshots` pour créer le baseline. Ensuite, lancez normalement.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('régression visuelle du header', async ({ page }) => {
-  await page.goto('https://playwright.dev');
-  await expect(page.locator('header').first()).toHaveScreenshot('header-baseline.png', {
-    maxDiffPixels: 10,
-  });
-});`,
-  },
-  {
-    id: 'ej-i22',
-    num: 'I22',
-    title: 'Bloquer et rediriger les requêtes',
-    difficulty: 'intermediate',
-    description:
-      'Bloquez toutes les requêtes d\'images pour accélérer le chargement de la page. Vérifiez que la page charge tout aussi bien sans images.',
-    hint: 'Utilisez `page.route("**/*.{png,jpg,jpeg,webp,gif}", route => route.abort())`.',
-    solution: `import { test, expect } from '@playwright/test';
-
-test('bloquer les images pour accélérer le chargement', async ({ page }) => {
-  await page.route('**/*.{png,jpg,jpeg,webp,gif,svg}', route => route.abort());
-
-  await page.goto('https://playwright.dev');
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  // La page a chargé sans images
-  const images = await page.locator('img').all();
-  // Les images existent dans le DOM mais leur src a été bloqué
-  expect(images.length).toBeGreaterThanOrEqual(0);
-});`,
-  },
 ];
