@@ -40,10 +40,11 @@ test('vérifier l\'en-tête principal', async ({ page }) => {
     difficulty: 'beginner',
     description:
       'Utilisez la démo `https://demo.playwright.dev/todomvc`. Saisissez une tâche dans le champ texte et appuyez sur Entrée pour l\'ajouter. Vérifiez que la tâche apparaît dans la liste.',
-    hint: 'Utilisez `page.getByPlaceholder(...)` pour le champ et `page.keyboard.press("Enter")`.',
+    hint: 'Utilisez `page.getByPlaceholder(...)` pour le champ et `page.keyboard.press("Enter")`. Dans une suite réelle, définissez `baseURL` dans `playwright.config.ts` et utilisez `page.goto(\'/route\')` — le test ne dépend pas d\'une URL codée en dur.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('ajouter une tâche dans TodoMVC', async ({ page }) => {
+  // Dans une suite réelle : définir baseURL dans playwright.config.ts et utiliser page.goto('/todomvc')
   await page.goto('https://demo.playwright.dev/todomvc');
   await page.getByPlaceholder('What needs to be done?').fill('Apprendre Playwright');
   await page.keyboard.press('Enter');
@@ -431,7 +432,7 @@ test('gérer un nouvel onglet', async ({ page, context }) => {
     difficulty: 'intermediate',
     description:
       'Interceptez toutes les requêtes vers l\'API et enregistrez leurs URLs. Vérifiez qu\'au moins une requête vers l\'endpoint `/api/todos` a été effectuée.',
-    hint: 'Utilisez `page.on("request", cb)` pour écouter. Ou `page.waitForRequest(/motif/)` pour attendre une spécifique.',
+    hint: 'Utilisez `page.on("request", cb)` pour écouter. Ou `page.waitForRequest(/motif/)` pour attendre une spécifique. Attention : `waitForLoadState("networkidle")` peut être fragile avec du polling ou des websockets — préférez `waitForResponse` ou `waitForRequest` pour une API précise.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('intercepter les requêtes', async ({ page }) => {
@@ -439,7 +440,7 @@ test('intercepter les requêtes', async ({ page }) => {
   page.on('request', req => requests.push(req.url()));
 
   await page.goto('https://demo.playwright.dev/todomvc');
-  // Attendre le chargement et vérifier optionnellement
+  // ⚠️ networkidle fragile avec polling/websockets ; préférez waitForRequest/waitForResponse pour des APIs précises
   await page.waitForLoadState('networkidle');
   // Si l'app effectue des appels API, vérifier :
   // expect(requests.some(url => url.includes('/api/'))).toBe(true);
@@ -1285,7 +1286,7 @@ export default MetricsReporter;
     difficulty: 'advanced',
     description:
       'Étant donné une liste de cartes de produits avec prix et bouton "Agregar", utilisez des locators enchaînés pour trouver la carte la moins chère (premier élément après le tri) et cliquer sur son bouton.',
-    hint: 'Enchaînez `.filter({ has: locator })` et `.nth(0)`. Ou filtrez par `hasText` pour trouver le prix minimum après l\'avoir extrait.',
+    hint: 'Enchaînez `.filter({ has: locator })` et `.nth(0)`. Ou filtrez par `hasText` pour trouver le prix minimum après l\'avoir extrait. Après le tri, préférez `waitForResponse(/produits/)` plutôt que `waitForLoadState("networkidle")` — plus déterministe.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('ajouter le produit le moins cher', async ({ page }) => {
@@ -1293,6 +1294,7 @@ test('ajouter le produit le moins cher', async ({ page }) => {
 
   // Trier par prix croissant
   await page.getByRole('combobox', { name: /ordenar/i }).selectOption('price-asc');
+  // ⚠️ networkidle peut échouer avec des connexions ouvertes ; utilisez waitForResponse si l'API renvoie les résultats
   await page.waitForLoadState('networkidle');
 
   // Le premier dans la liste est le moins cher
@@ -1332,6 +1334,7 @@ test('Web Vitals : LCP et CLS', async ({ page }) => {
         }
       }).observe({ type: 'layout-shift', buffered: true });
 
+      // 2000ms : marge pour que les PerformanceObservers capturent les entrées tardives (LCP peut se déclencher après le chargement)
       setTimeout(() => resolve({ lcp, cls }), 2000);
     });
   });

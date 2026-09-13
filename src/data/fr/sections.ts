@@ -378,7 +378,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "// frameLocator — méthode recommandée\nconst frame = page.frameLocator('iframe[name=\"pago\"]');\n\nawait frame.getByLabel('Número de tarjeta').fill('4111 1111 1111 1111');\nawait frame.getByLabel('CVV').fill('123');\nawait frame.getByRole('button', { name: 'Pagar' }).click();\n\n// Objet Frame (alternative)\nconst f = page.frame({ name: 'mi-iframe' });\nawait f.locator('input.nombre').fill('Juan');"
+          "code": "// frameLocator — méthode recommandée\nconst frame = page.frameLocator('iframe[name=\"pago\"]');\n\nawait frame.getByLabel('Número de tarjeta').fill('4111 1111 1111 1111');\nawait frame.getByLabel('CVV').fill('123');\nawait frame.getByRole('button', { name: 'Pagar' }).click();\n\n// Objet Frame (alternative legacy — préférez frameLocator)\nconst f = page.frame({ name: 'mi-iframe' });\n// ⚠️ Préférez getByLabel/getByRole aux sélecteurs CSS\nawait f?.getByLabel('Nom').fill('Jean');"
         }
       },
       {

@@ -41,10 +41,11 @@ test('verificar encabezado principal', async ({ page }) => {
     difficulty: 'beginner',
     description:
       'Usa la demo de `https://demo.playwright.dev/todomvc`. Escribe una tarea en el campo de texto y presiona Enter para agregarla. Verifica que la tarea aparece en la lista.',
-    hint: 'Usa `page.getByPlaceholder(...)` para el campo y `page.keyboard.press("Enter")`.',
+    hint: 'Usa `page.getByPlaceholder(...)` para el campo y `page.keyboard.press("Enter")`. En suites reales define `baseURL` en `playwright.config.ts` y usa `page.goto(\'/ruta\')` — así el test no depende de una URL hardcodeada.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('agregar una tarea en TodoMVC', async ({ page }) => {
+  // En una suite real: define baseURL en playwright.config.ts y usa page.goto('/todomvc')
   await page.goto('https://demo.playwright.dev/todomvc');
   await page.getByPlaceholder('What needs to be done?').fill('Aprender Playwright');
   await page.keyboard.press('Enter');
@@ -432,7 +433,7 @@ test('manejar nueva pestaña', async ({ page, context }) => {
     difficulty: 'intermediate',
     description:
       'Intercepta todas las peticiones a la API y registra sus URLs. Verifica que al menos una petición al endpoint `/api/todos` fue realizada.',
-    hint: 'Usa `page.on("request", cb)` para escuchar. O `page.waitForRequest(/patrón/)` para esperar una específica.',
+    hint: 'Usa `page.on("request", cb)` para escuchar. O `page.waitForRequest(/patrón/)` para esperar una específica. Precaución: `waitForLoadState("networkidle")` puede ser frágil en apps con polling o websockets — prefiere `waitForResponse` o `waitForRequest` cuando necesites esperar una llamada específica.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('interceptar peticiones', async ({ page }) => {
@@ -440,7 +441,7 @@ test('interceptar peticiones', async ({ page }) => {
   page.on('request', req => requests.push(req.url()));
 
   await page.goto('https://demo.playwright.dev/todomvc');
-  // Esperar carga y opcional verificar
+  // ⚠️ networkidle es frágil con polling/websockets; prefer waitForRequest/waitForResponse para APIs específicas
   await page.waitForLoadState('networkidle');
   // Si la app hace llamadas a API, verificar:
   // expect(requests.some(url => url.includes('/api/'))).toBe(true);
@@ -1287,7 +1288,7 @@ export default MetricsReporter;
     difficulty: 'advanced',
     description:
       'Dada una lista de tarjetas de productos con precio y botón "Agregar", usa locators encadenados para encontrar la tarjeta más barata (primer ítem del sort) y hacer clic en su botón.',
-    hint: 'Encadena `.filter({ has: locator })` y `.nth(0)`. O filtra por `hasText` para encontrar el precio mínimo después de extraerlo.',
+    hint: 'Encadena `.filter({ has: locator })` y `.nth(0)`. O filtra por `hasText` para encontrar el precio mínimo después de extraerlo. Tras ordenar, prefiere `waitForResponse(/productos/)` en lugar de `waitForLoadState("networkidle")` — más determinista.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('agregar el producto más barato', async ({ page }) => {
@@ -1295,6 +1296,7 @@ test('agregar el producto más barato', async ({ page }) => {
 
   // Ordenar por precio ascendente
   await page.getByRole('combobox', { name: /ordenar/i }).selectOption('price-asc');
+  // ⚠️ networkidle puede fallar con conexiones abiertas; usa waitForResponse si la API devuelve los resultados
   await page.waitForLoadState('networkidle');
 
   // El primero en la lista es el más barato
@@ -1334,6 +1336,7 @@ test('Web Vitals: LCP y CLS', async ({ page }) => {
         }
       }).observe({ type: 'layout-shift', buffered: true });
 
+      // 2000ms: margen para que los PerformanceObservers capturen entradas tardías (LCP puede dispararse después de carga)
       setTimeout(() => resolve({ lcp, cls }), 2000);
     });
   });
