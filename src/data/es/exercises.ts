@@ -1321,6 +1321,7 @@ test('agregar el producto más barato', async ({ page }) => {
     solution: `import { test, expect } from '@playwright/test';
 
 test('Web Vitals: LCP y CLS', async ({ page }) => {
+  // ⚠️ waitUntil: 'networkidle' frágil con polling/websockets; prefiere 'load' o 'domcontentloaded' en la mayoría de casos
   await page.goto('https://mi-app.ejemplo.com', { waitUntil: 'networkidle' });
 
   const vitals = await page.evaluate(async () => {
