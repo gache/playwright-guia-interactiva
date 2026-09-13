@@ -758,7 +758,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "const titulo = await page.title();\nconst url    = page.url();\nconst vp     = page.viewportSize();\nconst texto  = await page.locator('h1').innerText();\n\n// Exécuter du JS dans le navigateur\nconst scrollY = await page.evaluate(() => window.scrollY);\nconst n = await page.evaluate(\n  sel => document.querySelectorAll(sel).length,\n  '.tarjeta'\n);\n\nawait page.pdf({ path: 'pagina.pdf', format: 'A4' });"
+          "code": "const titulo = await page.title();\nconst url    = page.url();\nconst vp     = page.viewportSize();\nconst texto  = await page.locator('h1').innerText();\n\n// Exécuter du JS dans le navigateur\nconst scrollY = await page.evaluate(() => window.scrollY);\nconst n = await page.locator('.tarjeta').count();\n\nawait page.pdf({ path: 'pagina.pdf', format: 'A4' });"
         }
       },
       {

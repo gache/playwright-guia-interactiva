@@ -9,13 +9,12 @@ export const exercises: Exercise[] = [
     difficulty: 'beginner',
     description:
       'Navega a `https://playwright.dev` y verifica que el título del documento contenga la palabra "Playwright".',
-    hint: 'Usa `page.title()` para obtener el título y `expect(title).toContain(...)` para verificarlo.',
+    hint: 'Usa la assertion web-first `expect(page).toHaveTitle(...)` — soporta reintentos automáticos a diferencia de `await page.title()`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('verificar título de playwright.dev', async ({ page }) => {
   await page.goto('https://playwright.dev');
-  const title = await page.title();
-  expect(title).toContain('Playwright');
+  await expect(page).toHaveTitle(/Playwright/);
 });`,
   },
   {
@@ -150,16 +149,16 @@ test('seleccionar opción en dropdown', async ({ page }) => {
     difficulty: 'beginner',
     description:
       'Encuentra un checkbox en una página, verifica que está desmarcado, márcalo y luego verifica que está marcado.',
-    hint: 'Usa `locator.check()`, `locator.uncheck()` y `locator.isChecked()`.',
+    hint: 'Usa `locator.check()`, `locator.uncheck()` y las assertions web-first `expect(locator).toBeChecked()` / `expect(locator).not.toBeChecked()`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('marcar checkbox', async ({ page }) => {
   await page.goto('https://the-internet.herokuapp.com/checkboxes');
   const cb = page.locator('input[type="checkbox"]').first();
   await cb.uncheck();
-  expect(await cb.isChecked()).toBe(false);
+  await expect(cb).not.toBeChecked();
   await cb.check();
-  expect(await cb.isChecked()).toBe(true);
+  await expect(cb).toBeChecked();
 });`,
   },
   {
@@ -582,7 +581,7 @@ test('POM básico', async ({ page }) => {
   await todo.addTask('Primera');
   await todo.addTask('Segunda');
   await todo.completeTask(0);
-  expect(await todo.getTaskCount()).toBe(2);
+  await expect(page.locator('.todo-list li')).toHaveCount(2);
   await expect(page.locator('.todo-list li').first()).toHaveClass(/completed/);
 });`,
   },
@@ -983,7 +982,7 @@ test('login E2E con POM en practice.expandtesting.com', async ({ page }) => {
   await login.login('tu-email@test.com', 'Tu1234!');
   await page.waitForURL('https://practice.expandtesting.com/notes');
   const notes = new NotesPage(page);
-  expect(await notes.isLoaded()).toBe(true);
+  await expect(notes.heading).toBeVisible();
 });`,
   },
   {

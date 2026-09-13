@@ -770,7 +770,6 @@
   }
 
   .hamburger {
-    display: none;
     position: fixed;
     top: 12px;
     left: 12px;
@@ -786,6 +785,10 @@
     align-items: center;
     justify-content: center;
     padding: 0;
+    display: none;
+  }
+  @media (max-width: 860px) {
+    .hamburger { display: flex; }
   }
   .sidebar-backdrop {
     display: none;
