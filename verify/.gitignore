@@ -1,0 +1,6 @@
+.generated/
+.certs/
+auth-user*.json
+fixtures/
+*.png
+test-results/

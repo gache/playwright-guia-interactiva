@@ -1,3 +1,4 @@
+import { inertWhen } from '../a11y';
 import { useEffect, useState } from 'react';
 import type { Block, Section } from '../types';
 import { useLocale } from '../context/LocaleContext';
@@ -46,10 +47,10 @@ export function SectionView({
 
   // Open from outside (Siguiente button)
   useEffect(() => {
-    if (requestOpen && !open) {
-      setOpen(true);
+    if (requestOpen) {
+      if (!open) setOpen(true);
       setTimeout(() => {
-        document.getElementById(data.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById(data.id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
       }, 50);
       onRequestHandled?.();
     }
@@ -73,7 +74,7 @@ export function SectionView({
         tabIndex={0}
         aria-expanded={open}
         onClick={toggle}
-        onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && toggle()}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
       >
         <span className="sec-num">{data.num}</span>
         <div className="sec-head-content">
@@ -90,7 +91,7 @@ export function SectionView({
         </div>
         <span className="sec-chevron">▶</span>
       </div>
-      <div className="sec-body-anim" aria-hidden={!open}>
+      <div className="sec-body-anim" aria-hidden={!open} {...inertWhen(!open)}>
         <div className="sec-body-clip">
           <div className="sec-body">
             <p className="desc" dangerouslySetInnerHTML={{ __html: data.description }} />

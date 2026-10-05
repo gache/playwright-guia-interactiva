@@ -16,6 +16,8 @@ interface SidebarProps {
   visited: string[];
   quizAnsweredCount: number;
   quizTotal: number;
+  exercisesDone?: number;
+  exercisesTotal?: number;
   mobileOpen?: boolean;
   collapsed?: boolean;
   onMobileClose?: () => void;
@@ -35,7 +37,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTotal, mobileOpen, collapsed, onMobileClose, onToggleCollapse }: SidebarProps) {
+export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTotal, exercisesDone = 0, exercisesTotal = 0, mobileOpen, collapsed, onMobileClose, onToggleCollapse }: SidebarProps) {
   const [query, setQuery] = useState('');
   const q = query.toLowerCase().trim();
   const { locale } = useLocale();
@@ -152,6 +154,13 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
           <div className="nav-group">{t.practiceGroup}</div>
           <a href="#ejercicios" className={activeId === 'ejercicios' ? 'active' : ''} onClick={() => onMobileClose?.()}>
             <span className="n">🏋️</span> {t.exercisesTitle}
+            {exercisesTotal > 0 && (
+              <span className="nav-group-progress" aria-label={t.exerciseProgress(exercisesDone, exercisesTotal)}>
+                <span className="nav-group-done">{exercisesDone}</span>
+                <span className="nav-group-sep">/</span>
+                <span className="nav-group-total">{exercisesTotal}</span>
+              </span>
+            )}
           </a>
         </>
       )}

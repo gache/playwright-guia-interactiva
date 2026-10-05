@@ -92,6 +92,8 @@ export interface RoadmapStage {
 export interface ProgressState {
   visited: string[];
   quiz: Record<string, number>;
+  exercises: string[];
+  checks: Record<string, string[]>;
 }
 
 export interface Exercise {

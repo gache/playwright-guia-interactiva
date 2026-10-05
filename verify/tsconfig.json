@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "target": "es2022", "module": "commonjs", "moduleResolution": "node", "strict": true,
+    "noEmit": true, "skipLibCheck": true, "esModuleInterop": true, "types": ["node"], "lib": ["es2023", "dom"]
+  },
+  "include": [".generated/**/*.ts"]
+}

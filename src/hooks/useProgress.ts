@@ -3,17 +3,21 @@ import type { ProgressState } from '../types';
 
 const STORAGE_KEY = 'pwguide_progress_v1';
 
+const empty = (): ProgressState => ({ visited: [], quiz: {}, exercises: [], checks: {} });
+
 function loadProgress(): ProgressState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { visited: [], quiz: {} };
+    if (!raw) return empty();
     const parsed = JSON.parse(raw);
     return {
       visited: Array.isArray(parsed.visited) ? parsed.visited : [],
       quiz: parsed.quiz && typeof parsed.quiz === 'object' ? parsed.quiz : {},
+      exercises: Array.isArray(parsed.exercises) ? parsed.exercises : [],
+      checks: parsed.checks && typeof parsed.checks === 'object' ? parsed.checks : {},
     };
   } catch {
-    return { visited: [], quiz: {} };
+    return empty();
   }
 }
 
@@ -55,5 +59,27 @@ export function useProgress() {
     });
   }, []);
 
-  return { visited: state.visited, quizAnswers: state.quiz, markVisited, markUnvisited, recordAnswer };
+  const toggleExercise = useCallback((id: string) => {
+    setState(prev => {
+      const done = prev.exercises.includes(id);
+      const next = { ...prev, exercises: done ? prev.exercises.filter(e => e !== id) : [...prev.exercises, id] };
+      saveProgress(next);
+      return next;
+    });
+  }, []);
+
+  const toggleCheck = useCallback((id: string, key: string) => {
+    setState(prev => {
+      const current = prev.checks[id] ?? [];
+      const updated = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
+      const next = { ...prev, checks: { ...prev.checks, [id]: updated } };
+      saveProgress(next);
+      return next;
+    });
+  }, []);
+
+  return {
+    visited: state.visited, quizAnswers: state.quiz, markVisited, markUnvisited, recordAnswer,
+    doneExercises: state.exercises, checks: state.checks, toggleExercise, toggleCheck,
+  };
 }

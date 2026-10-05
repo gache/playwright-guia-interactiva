@@ -1,0 +1,18 @@
+name: Verify exercises against public sites
+# The exercises point at public practice sites (practice.expandtesting.com, playwright.dev, demo.playwright.dev).
+# They can change or go down, so this runs weekly and on demand instead of blocking every PR.
+on:
+  schedule: [{ cron: '0 6 * * 1' }]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run verify:exercises

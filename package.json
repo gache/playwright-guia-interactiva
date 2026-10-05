@@ -9,14 +9,18 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "extract-data": "node scripts/extract-guide-data.mjs"
+    "extract-data": "node scripts/extract-guide-data.mjs",
+    "verify:exercises": "node verify/run.mjs",
+    "verify:exercises:offline": "node verify/run.mjs --offline",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts"
   },
   "dependencies": {
+    "prism-react-renderer": "^2.4.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "prism-react-renderer": "^2.4.0"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
     "@testing-library/user-event": "^14.5.2",
@@ -24,9 +28,12 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "axe-playwright": "^2.2.2",
+    "js-yaml": "^5.4.2",
     "jsdom": "^25.0.1",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
-    "vitest": "^2.1.4"
+    "vitest": "^2.1.4",
+    "ws": "^8.22.0"
   }
 }

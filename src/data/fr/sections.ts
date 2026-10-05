@@ -146,7 +146,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "await page.goto('https://mi-app.com/productos');\nawait page.goto('/dashboard');                    // relative à baseURL\n\nawait page.goBack();\nawait page.goForward();\nawait page.reload();\n\n// Attendre que l'URL change (après login, redirect…)\nawait page.waitForURL('**/dashboard');    // motif glob\nawait page.waitForURL(/\\/dashboard/);    // regex\n\n// Attendre des états de chargement\nawait page.waitForLoadState('load');\nawait page.waitForLoadState('domcontentloaded');\nawait page.waitForLoadState('networkidle');  // réseau inactif ≥500ms"
+          "code": "await page.goto('https://mi-app.com/productos');\nawait page.goto('/dashboard');                    // relative à baseURL\n\nawait page.goBack();\nawait page.goForward();\nawait page.reload();\n\n// Attendre que l'URL change (après login, redirect…)\nawait page.waitForURL('**/dashboard');    // motif glob\nawait page.waitForURL(/\\/dashboard/);    // regex\n\n// Attendre des états de chargement\nawait page.waitForLoadState('load');\nawait page.waitForLoadState('domcontentloaded');\nawait page.waitForLoadState('networkidle');  // réseau inactif ≥500ms — ⚠️ déconseillé (fragile)"
         }
       },
       {
@@ -161,7 +161,7 @@ export const sections: Section[] = [
           "'load' ne fonctionne que sur Chromium."
         ],
         "answerIndex": 2,
-        "explanationHtml": "\"networkidle\" est utile pour les applis qui chargent des données en AJAX après le rendu initial, mais Playwright recommande de préférer attendre un élément visible plutôt que de dépendre d'états réseau génériques."
+        "explanationHtml": "La documentation officielle déconseille <code>networkidle</code> : il est fragile avec du polling, des websockets ou des analytics. Il vaut mieux attendre un élément visible ou une réponse précise (<code>waitForResponse</code>) avec des assertions web-first."
       }
     ]
   },
@@ -238,7 +238,7 @@ export const sections: Section[] = [
         "block": {
           "label": "TypeScript",
           "langClass": "ts",
-          "code": "const btn   = page.getByRole('button', { name: 'Enviar' });\nconst email = page.getByLabel('Email');\n\n// Clics\nawait btn.click();\nawait btn.dblclick();\nawait btn.click({ button: 'right' });\nawait btn.click({ modifiers: ['Control'] });\n\n// Formulaires\nawait email.fill('user@correo.com');   // efface et écrit\nawait email.clear();\nawait email.type('lento', { delay: 80 }); // simule une frappe réelle\nawait email.press('Tab');\nawait page.keyboard.press('Control+A');\n\n// Checkbox / Radio\nawait page.getByLabel('Recordarme').check();\nawait page.getByLabel('Recordarme').uncheck();\n\n// Select\nawait page.getByLabel('País').selectOption('México');\nawait page.getByLabel('Idiomas').selectOption(['es', 'en']);\n\n// Hover, focus, drag\nawait btn.hover();\nawait page.locator('#card').dragTo(page.locator('#done'));"
+          "code": "const btn   = page.getByRole('button', { name: 'Enviar' });\nconst email = page.getByLabel('Email');\n\n// Clics\nawait btn.click();\nawait btn.dblclick();\nawait btn.click({ button: 'right' });\nawait btn.click({ modifiers: ['Control'] });\n\n// Formulaires\nawait email.fill('user@correo.com');   // efface et écrit\nawait email.clear();\nawait email.pressSequentially('lento', { delay: 80 }); // simule une frappe réelle\nawait email.press('Tab');\nawait page.keyboard.press('Control+A');\n\n// Checkbox / Radio\nawait page.getByLabel('Recordarme').check();\nawait page.getByLabel('Recordarme').uncheck();\n\n// Select\nawait page.getByLabel('País').selectOption('México');\nawait page.getByLabel('Idiomas').selectOption(['es', 'en']);\n\n// Hover, focus, drag\nawait btn.hover();\nawait page.locator('#card').dragTo(page.locator('#done'));"
         }
       },
       {
@@ -1225,7 +1225,7 @@ export const sections: Section[] = [
         "block": {
           "label": "pages/TodoPage.ts — el Page Object del proyecto",
           "langClass": "ts",
-          "code": "import { type Page, type Locator, expect } from '@playwright/test';\n\nexport class TodoPage {\n  readonly page: Page;\n  readonly newTodoInput: Locator;\n  readonly todoItems: Locator;\n  readonly clearCompletedBtn: Locator;\n  readonly toggleAllCheckbox: Locator;\n\n  constructor(page: Page) {\n    this.page = page;\n    this.newTodoInput = page.getByPlaceholder('What needs to be done?');\n    this.todoItems = page.locator('.todo-list li');\n    this.clearCompletedBtn = page.getByRole('button', { name: 'Clear completed' });\n    this.toggleAllCheckbox = page.locator('label[for=\"toggle-all\"]');\n  }\n\n  async goto() {\n    await this.page.goto('/');\n    await expect(this.page).toHaveTitle(/TodoMVC/);\n  }\n\n  async addTodo(titulo: string) {\n    await this.newTodoInput.fill(titulo);\n    await this.newTodoInput.press('Enter');\n  }\n\n  async toggleFirst() {\n    await this.todoItems.first().locator('.toggle').click();\n  }\n\n  async editFirst(nuevoTexto: string) {\n    await this.todoItems.first().dblclick();\n    const edit = this.page.locator('.todo-list li.editing input.edit');\n    await edit.fill(nuevoTexto);\n    await edit.press('Enter');\n  }\n\n  async filterBy(nombre: 'All' | 'Active' | 'Completed') {\n    await this.page.getByRole('link', { name: nombre }).click();\n  }\n}"
+          "code": "import { type Page, type Locator, expect } from '@playwright/test';\n\nexport class TodoPage {\n  readonly page: Page;\n  readonly newTodoInput: Locator;\n  readonly todoItems: Locator;\n  readonly clearCompletedBtn: Locator;\n  readonly toggleAllCheckbox: Locator;\n\n  constructor(page: Page) {\n    this.page = page;\n    this.newTodoInput = page.getByPlaceholder('What needs to be done?');\n    this.todoItems = page.getByTestId('todo-item');\n    this.clearCompletedBtn = page.getByRole('button', { name: 'Clear completed' });\n    this.toggleAllCheckbox = page.getByLabel('Mark all as complete');\n  }\n\n  async goto() {\n    await this.page.goto('/');\n    await expect(this.page).toHaveTitle(/TodoMVC/);\n  }\n\n  async addTodo(titulo: string) {\n    await this.newTodoInput.fill(titulo);\n    await this.newTodoInput.press('Enter');\n  }\n\n  async toggleFirst() {\n    await this.todoItems.first().getByRole('checkbox', { name: 'Toggle Todo' }).check();\n  }\n\n  async editFirst(nuevoTexto: string) {\n    await this.todoItems.first().getByTestId('todo-title').dblclick();\n    const edit = this.todoItems.first().getByRole('textbox', { name: 'Edit' });\n    await edit.fill(nuevoTexto);\n    await edit.press('Enter');\n  }\n\n  async filterBy(nombre: 'All' | 'Active' | 'Completed') {\n    await this.page.getByRole('link', { name: nombre }).click();\n  }\n}"
         }
       },
       {
@@ -1241,7 +1241,7 @@ export const sections: Section[] = [
         "block": {
           "label": "tests/todo.spec.ts — el test describe comportamiento, TodoPage hace el trabajo",
           "langClass": "ts",
-          "code": "import { test, expect } from '../fixtures/todo.fixture';\n\ntest.describe('TodoMVC — Gestión de tareas', () => {\n  // il n'y a plus de `let todo` ni de beforeEach — le fixture s'en charge\n\n  test('crear una nueva tarea', async ({ todo, page }) => {\n    await todo.addTodo('Aprender Playwright');\n\n    // Vérifier qu'il apparaît dans la liste\n    await expect(page.getByText('Aprender Playwright')).toBeVisible();\n\n    // Vérifier le compteur\n    await expect(page.getByText('1 item left')).toBeVisible();\n  });\n\n  test('completar una tarea', async ({ todo, page }) => {\n    await todo.addTodo('Tarea para completar');\n    await todo.toggleFirst();\n\n    await expect(page.locator('.todo-list li.completed')).toHaveCount(1);\n    await expect(page.getByText('0 items left')).toBeVisible();\n  });\n\n  test('filtrar tareas activas y completadas', async ({ todo, page }) => {\n    await todo.addTodo('Tarea 1');\n    await todo.addTodo('Tarea 2');\n    await todo.toggleFirst();\n\n    await todo.filterBy('Active');\n    await expect(page.locator('.todo-list li')).toHaveCount(1);\n    await expect(page.getByText('Tarea 2')).toBeVisible();\n\n    await todo.filterBy('Completed');\n    await expect(page.locator('.todo-list li')).toHaveCount(1);\n    await expect(page.getByText('Tarea 1')).toBeVisible();\n  });\n\n  test('editar una tarea con doble clic', async ({ todo, page }) => {\n    await todo.addTodo('Texto original');\n    await todo.editFirst('Texto actualizado');\n\n    await expect(page.getByText('Texto actualizado')).toBeVisible();\n    await expect(page.getByText('Texto original')).not.toBeVisible();\n  });\n\n  test('eliminar todas las completadas', async ({ todo, page }) => {\n    await todo.addTodo('Completada');\n    await todo.addTodo('Pendiente');\n    await todo.toggleFirst();\n\n    await todo.clearCompletedBtn.click();\n\n    await expect(page.locator('.todo-list li')).toHaveCount(1);\n    await expect(page.getByText('Pendiente')).toBeVisible();\n  });\n});"
+          "code": "import { test, expect } from '../fixtures/todo.fixture';\n\ntest.describe('TodoMVC — Gestión de tareas', () => {\n  // il n'y a plus de `let todo` ni de beforeEach — le fixture s'en charge\n\n  test('crear una nueva tarea', async ({ todo, page }) => {\n    await todo.addTodo('Aprender Playwright');\n\n    // Vérifier qu'il apparaît dans la liste\n    await expect(page.getByText('Aprender Playwright')).toBeVisible();\n\n    // Vérifier le compteur\n    await expect(page.getByText('1 item left')).toBeVisible();\n  });\n\n  test('completar una tarea', async ({ todo, page }) => {\n    await todo.addTodo('Tarea para completar');\n    await todo.toggleFirst();\n\n    await expect(page.getByTestId('todo-item').filter({ has: page.getByRole('checkbox', { checked: true }) })).toHaveCount(1);\n    await expect(page.getByText('0 items left')).toBeVisible();\n  });\n\n  test('filtrar tareas activas y completadas', async ({ todo, page }) => {\n    await todo.addTodo('Tarea 1');\n    await todo.addTodo('Tarea 2');\n    await todo.toggleFirst();\n\n    await todo.filterBy('Active');\n    await expect(page.getByTestId('todo-item')).toHaveCount(1);\n    await expect(page.getByText('Tarea 2')).toBeVisible();\n\n    await todo.filterBy('Completed');\n    await expect(page.getByTestId('todo-item')).toHaveCount(1);\n    await expect(page.getByText('Tarea 1')).toBeVisible();\n  });\n\n  test('editar una tarea con doble clic', async ({ todo, page }) => {\n    await todo.addTodo('Texto original');\n    await todo.editFirst('Texto actualizado');\n\n    await expect(page.getByText('Texto actualizado')).toBeVisible();\n    await expect(page.getByText('Texto original')).not.toBeVisible();\n  });\n\n  test('eliminar todas las completadas', async ({ todo, page }) => {\n    await todo.addTodo('Completada');\n    await todo.addTodo('Pendiente');\n    await todo.toggleFirst();\n\n    await todo.clearCompletedBtn.click();\n\n    await expect(page.getByTestId('todo-item')).toHaveCount(1);\n    await expect(page.getByText('Pendiente')).toBeVisible();\n  });\n});"
         }
       },
       {
@@ -1251,7 +1251,7 @@ export const sections: Section[] = [
         "solution": {
           "label": "Solución",
           "langClass": "ts",
-          "code": "test('completar todas las tareas de una vez', async ({ todo, page }) => {\n  await todo.addTodo('Tarea A');\n  await todo.addTodo('Tarea B');\n  await todo.addTodo('Tarea C');\n\n  // On réutilise le locator déjà défini dans le Page Object\n  await todo.toggleAllCheckbox.click();\n\n  await expect(page.getByText('0 items left')).toBeVisible();\n  await expect(todo.clearCompletedBtn).toBeVisible();\n  await expect(page.locator('.todo-list li.completed')).toHaveCount(3);\n});"
+          "code": "test('completar todas las tareas de una vez', async ({ todo, page }) => {\n  await todo.addTodo('Tarea A');\n  await todo.addTodo('Tarea B');\n  await todo.addTodo('Tarea C');\n\n  // On réutilise le locator déjà défini dans le Page Object\n  await todo.toggleAllCheckbox.click();\n\n  await expect(page.getByText('0 items left')).toBeVisible();\n  await expect(todo.clearCompletedBtn).toBeVisible();\n  await expect(page.getByTestId('todo-item').filter({ has: page.getByRole('checkbox', { checked: true }) })).toHaveCount(3);\n});"
         }
       },
       {
@@ -1309,7 +1309,7 @@ export const sections: Section[] = [
         "good": {
           "label": "✅ Correct",
           "langClass": "good",
-          "code": "// Promise.all lance LES DEUX avant l'await\nconst [popup] = await Promise.all([\n  page.waitForEvent('popup'),   // écoute en premier\n  page.click('a[target=\"_blank\"]'),\n]);"
+          "code": "// Promise.all lance LES DEUX avant l'await\nconst [popup] = await Promise.all([\n  page.waitForEvent('popup'),   // écoute en premier\n  page.getByRole('link', { name: 'Docs' }).click(),\n]);"
         }
       },
       {
@@ -1323,7 +1323,7 @@ export const sections: Section[] = [
         "good": {
           "label": "✅ Basé sur une condition",
           "langClass": "good",
-          "code": "await page.click('#cargar');\n// Attend exactement ce qu'il faut\nawait expect(page.locator('.lista')).toBeVisible();\n// Le expect réessaie pour vous"
+          "code": "await page.getByRole('button', { name: 'Cargar' }).click();\n// Attend exactement ce qu'il faut\nawait expect(page.locator('.lista')).toBeVisible();\n// Le expect réessaie pour vous"
         }
       },
       {
@@ -1351,7 +1351,7 @@ export const sections: Section[] = [
         "good": {
           "label": "✅ Handler avant le clic",
           "langClass": "good",
-          "code": "// Enregistrer AVANT l'action\npage.once('dialog', d => d.accept());\nawait page.click('#eliminar');"
+          "code": "// Enregistrer AVANT l'action\npage.once('dialog', d => d.accept());\nawait page.getByRole('button', { name: 'Eliminar' }).click();"
         }
       },
       {
@@ -1379,6 +1379,12 @@ export const sections: Section[] = [
         "variant": "tip",
         "icon": "💡",
         "html": "Installez <strong>eslint-plugin-playwright</strong> pour détecter automatiquement <code>test.only</code>, les <code>waitForTimeout</code> codés en dur et d'autres anti-patterns dans votre code."
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "icon": "📘",
+        "html": "<strong>Checklist du guide officiel :</strong> testez le comportement visible par l'utilisateur (pas les classes CSS ni les détails internes) ; gardez chaque test <strong>isolé</strong> (son propre état, ses données et sa session) ; <strong>simulez les services tiers</strong> avec <code>page.route</code> au lieu de les tester ; utilisez des locators sémantiques et des assertions web-first ; activez <code>trace: 'on-first-retry'</code> en CI ; et ajoutez <code>@typescript-eslint/no-floating-promises</code> pour détecter les <code>await</code> oubliés."
       },
       {
         "type": "quiz",
@@ -1481,7 +1487,7 @@ export const sections: Section[] = [
         "solution": {
           "label": "Solución",
           "langClass": "ts",
-          "code": "await page.getByRole('button', { name: 'Cargar más' }).click();\n\n// toHaveCount attend un nombre EXACT — pour « au moins N » il faut du polling\nawait page.waitForFunction(\n  () => document.querySelectorAll('.producto').length >= 10\n);"
+          "code": "await page.getByRole('button', { name: 'Cargar más' }).click();\n\n// toHaveCount attend un nombre EXACT — pour « au moins N » utilisez expect.poll\nawait expect\n  .poll(() => page.locator('.producto').count())\n  .toBeGreaterThanOrEqual(10);"
         }
       },
       {

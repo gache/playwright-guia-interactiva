@@ -41,15 +41,16 @@ test('verificar encabezado principal', async ({ page }) => {
     difficulty: 'beginner',
     description:
       'Usa la demo de `https://demo.playwright.dev/todomvc`. Escribe una tarea en el campo de texto y presiona Enter para agregarla. Verifica que la tarea aparece en la lista.',
-    hint: 'Usa `page.getByPlaceholder(...)` para el campo y `page.keyboard.press("Enter")`. En suites reales define `baseURL` en `playwright.config.ts` y usa `page.goto(\'/ruta\')` — así el test no depende de una URL hardcodeada.',
+    hint: 'Usa `page.getByPlaceholder(...)` para el campo, `locator.press("Enter")` para confirmar y `getByTestId("todo-title")` para la tarea. En suites reales define `baseURL` en `playwright.config.ts` y usa `page.goto(\'/ruta\')`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('agregar una tarea en TodoMVC', async ({ page }) => {
   // En una suite real: define baseURL en playwright.config.ts y usa page.goto('/todomvc')
   await page.goto('https://demo.playwright.dev/todomvc');
-  await page.getByPlaceholder('What needs to be done?').fill('Aprender Playwright');
-  await page.keyboard.press('Enter');
-  await expect(page.getByText('Aprender Playwright')).toBeVisible();
+  const nuevaTarea = page.getByPlaceholder('What needs to be done?');
+  await nuevaTarea.fill('Aprender Playwright');
+  await nuevaTarea.press('Enter');
+  await expect(page.getByTestId('todo-title')).toHaveText('Aprender Playwright');
 });`,
   },
   {
@@ -58,20 +59,22 @@ test('agregar una tarea en TodoMVC', async ({ page }) => {
     title: 'Llenar formulario de registro y enviarlo',
     difficulty: 'beginner',
     description:
-      'Navega a `https://practice.expandtesting.com/register`. Llena los campos Name, Email, Password y Confirm Password con datos válidos. Haz clic en "Register" y verifica que aparece el mensaje de éxito.',
-    hint: 'Usa `getByPlaceholder("Name")` o `getByLabel(...)` para los campos. El mensaje de éxito aparece como alerta/toast verde.',
+      'Navega a `https://practice.expandtesting.com/register`. Llena los campos Username, Password y Confirm Password con datos válidos. Haz clic en "Register" y verifica que el sitio te redirige al login con el mensaje de éxito.',
+    hint: 'Usa `getByLabel("Username")`, `getByLabel("Password", { exact: true })` y `getByLabel("Confirm Password")`. Genera un usuario único por ejecución para que el test sea repetible.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('registro en practice.expandtesting.com', async ({ page }) => {
   await page.goto('https://practice.expandtesting.com/register');
 
-  await page.getByPlaceholder('Name').fill('Ana García');
-  await page.getByPlaceholder('Email').fill(\`ana\${Date.now()}@test.com\`);
-  await page.getByPlaceholder('Password').fill('Test1234!');
-  await page.getByPlaceholder('Confirm Password').fill('Test1234!');
+  // Usuario único por ejecución: el test no depende de datos previos
+  const password = 'Test1234!';
+  await page.getByLabel('Username').fill(\`user-\${Date.now()}\`);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByLabel('Confirm Password').fill(password);
   await page.getByRole('button', { name: 'Register' }).click();
 
-  await expect(page.getByText(/account created|registered successfully/i)).toBeVisible();
+  await expect(page).toHaveURL(/\\/login/);
+  await expect(page.getByText('Successfully registered')).toBeVisible();
 });`,
   },
   {
@@ -114,16 +117,16 @@ test('captura de pantalla completa', async ({ page }) => {
     title: 'Esperar a que un elemento sea visible',
     difficulty: 'beginner',
     description:
-      'Navega a una página con contenido que carga de forma asíncrona. Espera a que un elemento con clase `.results` sea visible antes de verificar su texto.',
-    hint: '`expect(locator).toBeVisible()` ya espera automáticamente. También puedes usar `locator.waitFor()`.',
+      'Navega a `https://practice.expandtesting.com/dynamic-loading/1`. Haz clic en "Start" y espera a que el texto final sea visible antes de verificarlo.',
+    hint: '`expect(locator).toBeVisible()` ya espera automáticamente (reintenta hasta el timeout). No necesitas `waitForTimeout`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('esperar elemento asíncrono', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/dynamic_loading/1');
+  await page.goto('https://practice.expandtesting.com/dynamic-loading/1');
   await page.getByRole('button', { name: 'Start' }).click();
-  const resultado = page.locator('#finish');
-  await expect(resultado).toBeVisible({ timeout: 10_000 });
-  await expect(resultado).toContainText('Hello World!');
+
+  // La assertion reintenta sola; solo subimos el timeout porque la carga tarda ~5 s
+  await expect(page.getByRole('heading', { name: 'Hello World!' })).toBeVisible({ timeout: 10_000 });
 });`,
   },
   {
@@ -132,15 +135,15 @@ test('esperar elemento asíncrono', async ({ page }) => {
     title: 'Seleccionar una opción en un dropdown',
     difficulty: 'beginner',
     description:
-      'En una página con un `<select>`, selecciona una opción específica por su valor y verifica que quedó seleccionada.',
-    hint: 'Usa `page.selectOption(selector, valor)` o `locator.selectOption(valor)`.',
+      'En `https://practice.expandtesting.com/dropdown`, selecciona la opción de valor `50` del desplegable "Elements per Page" y verifica que quedó seleccionada.',
+    hint: 'Localiza el `<select>` por su etiqueta con `getByLabel(...)`, usa `locator.selectOption(valor)` y verifica con `expect(locator).toHaveValue(valor)`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('seleccionar opción en dropdown', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/dropdown');
-  await page.selectOption('#dropdown', '2');
-  const selected = page.locator('#dropdown option:checked');
-  await expect(selected).toHaveText('Option 2');
+  await page.goto('https://practice.expandtesting.com/dropdown');
+  const perPage = page.getByLabel('Elements per Page');
+  await perPage.selectOption('50');
+  await expect(perPage).toHaveValue('50');
 });`,
   },
   {
@@ -149,17 +152,22 @@ test('seleccionar opción en dropdown', async ({ page }) => {
     title: 'Marcar y desmarcar checkboxes',
     difficulty: 'beginner',
     description:
-      'Encuentra un checkbox en una página, verifica que está desmarcado, márcalo y luego verifica que está marcado.',
+      'En `https://practice.expandtesting.com/checkboxes`, verifica que "Checkbox 1" está desmarcado, márcalo y verifica que quedó marcado. Después desmarca "Checkbox 2" (que empieza marcado) y verifica el cambio.',
     hint: 'Usa `locator.check()`, `locator.uncheck()` y las assertions web-first `expect(locator).toBeChecked()` / `expect(locator).not.toBeChecked()`.',
     solution: `import { test, expect } from '@playwright/test';
 
-test('marcar checkbox', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/checkboxes');
-  const cb = page.locator('input[type="checkbox"]').first();
-  await cb.uncheck();
-  await expect(cb).not.toBeChecked();
-  await cb.check();
-  await expect(cb).toBeChecked();
+test('marcar y desmarcar checkboxes', async ({ page }) => {
+  await page.goto('https://practice.expandtesting.com/checkboxes');
+  const checkbox1 = page.getByLabel('Checkbox 1');
+  const checkbox2 = page.getByLabel('Checkbox 2');
+
+  await expect(checkbox1).not.toBeChecked();
+  await checkbox1.check();
+  await expect(checkbox1).toBeChecked();
+
+  await expect(checkbox2).toBeChecked();
+  await checkbox2.uncheck();
+  await expect(checkbox2).not.toBeChecked();
 });`,
   },
   {
@@ -169,20 +177,18 @@ test('marcar checkbox', async ({ page }) => {
     difficulty: 'beginner',
     description:
       'En la demo de TodoMVC, agrega 3 tareas distintas. Luego recoge todos los textos de la lista y verifica que las 3 tareas están presentes.',
-    hint: 'Usa `locator.allTextContents()` para obtener un array con todos los textos.',
+    hint: 'Usa `getByTestId("todo-title")` y la assertion web-first `toHaveText([...])`, que compara el array completo con reintentos. Evita `allTextContents()` + `expect` simple: no reintenta.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('verificar múltiples tareas', async ({ page }) => {
   await page.goto('https://demo.playwright.dev/todomvc');
   const input = page.getByPlaceholder('What needs to be done?');
-  for (const tarea of ['Tarea 1', 'Tarea 2', 'Tarea 3']) {
+  const tareas = ['Tarea 1', 'Tarea 2', 'Tarea 3'];
+  for (const tarea of tareas) {
     await input.fill(tarea);
     await input.press('Enter');
   }
-  const textos = await page.locator('.todo-list li label').allTextContents();
-  expect(textos).toContain('Tarea 1');
-  expect(textos).toContain('Tarea 2');
-  expect(textos).toContain('Tarea 3');
+  await expect(page.getByTestId('todo-title')).toHaveText(tareas);
 });`,
   },
   {
@@ -207,15 +213,18 @@ test('verificar cambio de URL', async ({ page }) => {
     title: 'Hover sobre un elemento',
     difficulty: 'beginner',
     description:
-      'Encuentra un elemento que revela contenido al pasar el cursor. Haz hover y verifica que el contenido oculto se vuelve visible.',
-    hint: 'Usa `locator.hover()` y luego `expect(locator).toBeVisible()`.',
+      'En `https://practice.expandtesting.com/hovers`, pasa el cursor sobre el primer avatar y verifica que aparece su información oculta ("name: user1").',
+    hint: 'Usa `locator.hover()` y luego una assertion web-first: `expect(locator).toBeVisible()`. Localiza con `getByTestId`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('hover revela contenido', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/hovers');
-  const card = page.locator('.figure').first();
-  await card.hover();
-  await expect(card.locator('.figcaption')).toBeVisible();
+  await page.goto('https://practice.expandtesting.com/hovers');
+  const user = page.getByTestId('user-1');
+  const caption = user.getByRole('heading', { name: 'name: user1' });
+
+  await expect(caption).toBeHidden();
+  await user.hover();
+  await expect(caption).toBeVisible();
 });`,
   },
   {
@@ -230,8 +239,8 @@ test('hover revela contenido', async ({ page }) => {
 
 test('lista vacía al inicio', async ({ page }) => {
   await page.goto('https://demo.playwright.dev/todomvc');
-  await expect(page.locator('.todo-list li')).toHaveCount(0);
-  await expect(page.locator('.todo-count')).not.toBeVisible();
+  await expect(page.getByTestId('todo-item')).toHaveCount(0);
+  await expect(page.getByTestId('todo-count')).toBeHidden();
 });`,
   },
   {
@@ -251,7 +260,7 @@ test('contar 5 tareas', async ({ page }) => {
     await input.fill(\`Tarea \${i}\`);
     await input.press('Enter');
   }
-  await expect(page.locator('.todo-list li')).toHaveCount(5);
+  await expect(page.getByTestId('todo-item')).toHaveCount(5);
 });`,
   },
   {
@@ -261,7 +270,7 @@ test('contar 5 tareas', async ({ page }) => {
     difficulty: 'beginner',
     description:
       'En TodoMVC, agrega una tarea. Haz doble clic en ella para activar el modo edición y cambia su texto.',
-    hint: 'Usa `locator.dblclick()`. El campo de edición aparece con clase `.edit`.',
+    hint: 'Usa `locator.dblclick()`. El campo de edición es un `textbox` con nombre accesible "Edit": `getByRole("textbox", { name: "Edit" })`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('editar tarea con doble clic', async ({ page }) => {
@@ -270,11 +279,13 @@ test('editar tarea con doble clic', async ({ page }) => {
   await input.fill('Texto original');
   await input.press('Enter');
 
-  await page.locator('.todo-list li label').dblclick();
-  await page.locator('.todo-list li .edit').fill('Texto editado');
-  await page.locator('.todo-list li .edit').press('Enter');
+  const item = page.getByTestId('todo-item');
+  await item.getByTestId('todo-title').dblclick();
+  const edit = item.getByRole('textbox', { name: 'Edit' });
+  await edit.fill('Texto editado');
+  await edit.press('Enter');
 
-  await expect(page.getByText('Texto editado')).toBeVisible();
+  await expect(item.getByTestId('todo-title')).toHaveText('Texto editado');
 });`,
   },
   {
@@ -283,14 +294,17 @@ test('editar tarea con doble clic', async ({ page }) => {
     title: 'Verificar un atributo de elemento',
     difficulty: 'beginner',
     description:
-      'Verifica que el campo de búsqueda de una página tiene el atributo `placeholder` correcto y que un enlace tiene el `href` esperado.',
+      'En la demo de TodoMVC, verifica que el campo de nueva tarea tiene el `placeholder` correcto y que el enlace de filtro "Active" apunta al `href` esperado.',
     hint: 'Usa `expect(locator).toHaveAttribute("nombre", "valor")`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('verificar atributos', async ({ page }) => {
-  await page.goto('https://playwright.dev');
-  await expect(page.getByRole('searchbox')).toHaveAttribute('placeholder', /search/i);
-  await expect(page.getByRole('link', { name: 'Docs' })).toHaveAttribute('href', /docs/);
+  await page.goto('https://demo.playwright.dev/todomvc');
+  await expect(page.getByPlaceholder('What needs to be done?')).toHaveAttribute('placeholder', 'What needs to be done?');
+  // El enlace solo aparece cuando hay tareas: agregamos una primero
+  await page.getByPlaceholder('What needs to be done?').fill('Tarea');
+  await page.getByPlaceholder('What needs to be done?').press('Enter');
+  await expect(page.getByRole('link', { name: 'Active' })).toHaveAttribute('href', '#/active');
 });`,
   },
   {
@@ -300,14 +314,15 @@ test('verificar atributos', async ({ page }) => {
     difficulty: 'beginner',
     description:
       'En un campo de texto, escribe contenido usando `fill`, luego selecciona todo con `Ctrl+A` y bórralo con `Delete`. Verifica que el campo queda vacío.',
-    hint: 'Usa `page.keyboard.press("Control+A")` y luego `"Delete"` o `"Backspace"`.',
+    hint: 'Usa `locator.press("ControlOrMeta+A")` (Ctrl en Windows/Linux, Cmd en macOS) y luego `"Delete"`. Para vaciar un campo, `locator.clear()` es aún más directo.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('limpiar campo con teclado', async ({ page }) => {
   await page.goto('https://demo.playwright.dev/todomvc');
   const input = page.getByPlaceholder('What needs to be done?');
   await input.fill('texto de prueba');
-  await input.press('Control+A');
+  // ControlOrMeta funciona en todos los sistemas operativos
+  await input.press('ControlOrMeta+A');
   await input.press('Delete');
   await expect(input).toHaveValue('');
 });`,
@@ -328,8 +343,9 @@ test('verificar clase completed', async ({ page }) => {
   await input.fill('Tarea para completar');
   await input.press('Enter');
 
-  await page.locator('.todo-list li .toggle').click();
-  await expect(page.locator('.todo-list li')).toHaveClass(/completed/);
+  const item = page.getByTestId('todo-item');
+  await item.getByRole('checkbox', { name: 'Toggle Todo' }).check();
+  await expect(item).toHaveClass(/completed/);
 });`,
   },
   {
@@ -362,12 +378,17 @@ test('verificar valor de input', async ({ page }) => {
 test('filtrar tareas completadas', async ({ page }) => {
   await page.goto('https://demo.playwright.dev/todomvc');
   const input = page.getByPlaceholder('What needs to be done?');
-  for (const t of ['A', 'B', 'C']) { await input.fill(t); await input.press('Enter'); }
-  const toggles = page.locator('.todo-list li .toggle');
-  await toggles.nth(0).click();
-  await toggles.nth(1).click();
+  for (const titulo of ['A', 'B', 'C']) {
+    await input.fill(titulo);
+    await input.press('Enter');
+  }
+
+  const items = page.getByTestId('todo-item');
+  await items.filter({ hasText: 'A' }).getByRole('checkbox').check();
+  await items.filter({ hasText: 'B' }).getByRole('checkbox').check();
+
   await page.getByRole('link', { name: 'Completed' }).click();
-  await expect(page.locator('.todo-list li')).toHaveCount(2);
+  await expect(items).toHaveText(['A', 'B']);
 });`,
   },
   {
@@ -382,7 +403,7 @@ test('filtrar tareas completadas', async ({ page }) => {
 
 test('scroll hasta elemento', async ({ page }) => {
   await page.goto('https://playwright.dev/docs/intro');
-  const footer = page.locator('footer');
+  const footer = page.getByRole('contentinfo');
   await footer.scrollIntoViewIfNeeded();
   await expect(footer).toBeInViewport();
 });`,
@@ -394,12 +415,13 @@ test('scroll hasta elemento', async ({ page }) => {
     difficulty: 'beginner',
     description:
       'Toma una captura de pantalla solo del encabezado de la página (no de toda la página) y guárdala como `header.png`.',
-    hint: 'Usa `locator.screenshot({ path: "..." })` directamente sobre el locator del elemento.',
-    solution: `import { test } from '@playwright/test';
+    hint: 'Usa `locator.screenshot({ path: "..." })` sobre el locator del elemento, p. ej. `getByRole("navigation", { name: "Main" })`.',
+    solution: `import { test, expect } from '@playwright/test';
 
 test('captura de un elemento', async ({ page }) => {
   await page.goto('https://playwright.dev');
-  const header = page.locator('header').first();
+  const header = page.getByRole('navigation', { name: 'Main' });
+  await expect(header).toBeVisible();
   await header.screenshot({ path: 'header.png' });
 });`,
   },
@@ -416,14 +438,14 @@ test('captura de un elemento', async ({ page }) => {
     solution: `import { test, expect } from '@playwright/test';
 
 test('manejar nueva pestaña', async ({ page, context }) => {
-  await page.goto('https://the-internet.herokuapp.com/windows');
-  const [newPage] = await Promise.all([
-    context.waitForEvent('page'),
-    page.getByRole('link', { name: 'Click Here' }).click(),
-  ]);
-  await newPage.waitForLoadState();
-  await expect(newPage).toHaveURL(/new/);
-  await expect(newPage.getByRole('heading')).toContainText('New Window');
+  await page.goto('https://practice.expandtesting.com/windows');
+  // Registrar la espera ANTES del clic que abre la pestaña
+  const pagePromise = context.waitForEvent('page');
+  await page.getByRole('link', { name: 'Click Here' }).click();
+  const newPage = await pagePromise;
+
+  await expect(newPage).toHaveURL(/\\/windows\\/new/);
+  await expect(newPage.getByRole('heading', { level: 1 })).toContainText('new window');
 });`,
   },
   {
@@ -432,20 +454,21 @@ test('manejar nueva pestaña', async ({ page, context }) => {
     title: 'Interceptar peticiones HTTP',
     difficulty: 'intermediate',
     description:
-      'Intercepta todas las peticiones a la API y registra sus URLs. Verifica que al menos una petición al endpoint `/api/todos` fue realizada.',
-    hint: 'Usa `page.on("request", cb)` para escuchar. O `page.waitForRequest(/patrón/)` para esperar una específica. Precaución: `waitForLoadState("networkidle")` puede ser frágil en apps con polling o websockets — prefiere `waitForResponse` o `waitForRequest` cuando necesites esperar una llamada específica.',
+      'Escucha las peticiones de red de tu app y registra sus URLs. Verifica que se realizó una petición `GET` al endpoint `/api/todos` al cargar la página.',
+    hint: 'Crea la promesa con `page.waitForRequest(...)` ANTES de la acción que dispara la llamada y `await` después. Evita `waitForLoadState("networkidle")`: es frágil con polling o websockets.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('interceptar peticiones', async ({ page }) => {
-  const requests: string[] = [];
-  page.on('request', req => requests.push(req.url()));
+  const urls: string[] = [];
+  page.on('request', req => urls.push(req.url()));
 
-  await page.goto('https://demo.playwright.dev/todomvc');
-  // ⚠️ networkidle es frágil con polling/websockets; prefer waitForRequest/waitForResponse para APIs específicas
-  await page.waitForLoadState('networkidle');
-  // Si la app hace llamadas a API, verificar:
-  // expect(requests.some(url => url.includes('/api/'))).toBe(true);
-  expect(requests.length).toBeGreaterThan(0);
+  // Registrar la espera ANTES de navegar, para no perder la petición
+  const todosRequest = page.waitForRequest('**/api/todos');
+  await page.goto('https://mi-app.ejemplo.com/todos');
+  const request = await todosRequest;
+
+  expect(request.method()).toBe('GET');
+  expect(urls.some(url => url.includes('/api/todos'))).toBe(true);
 });`,
   },
   {
@@ -477,21 +500,24 @@ test('mockear respuesta de API', async ({ page }) => {
     title: 'Manejar diálogos del navegador',
     difficulty: 'intermediate',
     description:
-      'Página que muestra un `alert`. Configura un manejador que acepte automáticamente el diálogo y verifica el mensaje que contenía.',
-    hint: 'Usa `page.on("dialog", dialog => { /* dialog.message(), dialog.accept() */ })`.',
+      'En `https://practice.expandtesting.com/js-dialogs` hay un botón que muestra un `alert`. Configura un manejador que acepte el diálogo, verifica el mensaje y comprueba la respuesta que muestra la página.',
+    hint: 'Registra el manejador con `page.once("dialog", ...)` ANTES del clic: el clic no termina hasta que el diálogo se resuelve, así que no puedes esperarlo después con `waitForEvent`. Dentro del manejador lee `dialog.message()` y llama `dialog.accept()`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('aceptar alert del navegador', async ({ page }) => {
-  let alertMessage = '';
-  page.on('dialog', async dialog => {
-    alertMessage = dialog.message();
+  await page.goto('https://practice.expandtesting.com/js-dialogs');
+
+  // Registrar el manejador ANTES de la acción que abre el diálogo
+  let message = '';
+  page.once('dialog', async dialog => {
+    message = dialog.message();
     await dialog.accept();
   });
 
-  await page.goto('https://the-internet.herokuapp.com/javascript_alerts');
-  await page.getByRole('button', { name: 'Click for JS Alert' }).click();
-  expect(alertMessage).toBe('I am a JS Alert');
-  await expect(page.locator('#result')).toContainText('You successfully clicked an alert');
+  await page.getByRole('button', { name: 'Js Alert' }).click();
+
+  expect(message).toBe('I am a Js Alert');
+  await expect(page.locator('#dialog-response')).toHaveText('OK');
 });`,
   },
   {
@@ -500,16 +526,22 @@ test('aceptar alert del navegador', async ({ page }) => {
     title: 'Subir un archivo',
     difficulty: 'intermediate',
     description:
-      'Encuentra un input de tipo file en una página. Sube un archivo de prueba y verifica que el nombre del archivo aparece en la página.',
-    hint: 'Usa `locator.setInputFiles("ruta/al/archivo.txt")` para simular la subida.',
+      'En `https://practice.expandtesting.com/upload`, sube un archivo de prueba (sin depender de ningún archivo en disco) y verifica que la página confirma la subida con el nombre del archivo.',
+    hint: 'Usa `locator.setInputFiles(...)`. Puedes pasar un objeto `{ name, mimeType, buffer }` y evitar depender de un archivo en disco.',
     solution: `import { test, expect } from '@playwright/test';
-import path from 'path';
 
 test('subir archivo', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/upload');
-  await page.setInputFiles('#file-upload', path.join(__dirname, 'fixture.txt'));
-  await page.getByRole('button', { name: 'Upload' }).click();
-  await expect(page.locator('#uploaded-files')).toContainText('fixture.txt');
+  await page.goto('https://practice.expandtesting.com/upload');
+  await page.getByTestId('file-input').setInputFiles({
+    name: 'fixture.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('contenido de prueba'),
+  });
+  await page.getByTestId('file-submit').click();
+
+  await expect(page.getByRole('heading', { name: 'File Uploaded!' })).toBeVisible();
+  // El servidor antepone un prefijo al nombre: usamos una regex
+  await expect(page.getByText(/fixture\\.txt/)).toBeVisible();
 });`,
   },
   {
@@ -518,12 +550,27 @@ test('subir archivo', async ({ page }) => {
     title: 'Arrastrar y soltar (drag & drop)',
     difficulty: 'intermediate',
     description:
-      'En una página con elementos arrastrables, mueve un elemento de la columna A a la columna B y verifica el nuevo orden.',
+      'En una página con dos cajas arrastrables (A y B), arrastra A sobre B y verifica que intercambiaron su contenido. (La página se construye con `page.setContent` para que el test no dependa de un sitio externo.)',
     hint: 'Usa `locator.dragTo(target)` para un drag & drop simple entre dos locators.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('drag and drop', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/drag_and_drop');
+  await page.setContent(\`
+    <div id="column-a" draggable="true"><header>A</header></div>
+    <div id="column-b" draggable="true"><header>B</header></div>
+    <script>
+      let dragged;
+      for (const col of document.querySelectorAll('[draggable]')) {
+        col.addEventListener('dragstart', e => { dragged = col; e.dataTransfer.setData('text/plain', col.id); });
+        col.addEventListener('dragover', e => e.preventDefault());
+        col.addEventListener('drop', e => {
+          e.preventDefault();
+          const a = dragged.querySelector('header'), b = col.querySelector('header');
+          [a.textContent, b.textContent] = [b.textContent, a.textContent];
+        });
+      }
+    </script>
+  \`);
   const columnA = page.locator('#column-a');
   const columnB = page.locator('#column-b');
 
@@ -539,15 +586,25 @@ test('drag and drop', async ({ page }) => {
     title: 'Trabajar con iframes',
     difficulty: 'intermediate',
     description:
-      'Encuentra un iframe en la página. Accede a su contenido, interactúa con un elemento dentro de él y verifica el resultado.',
-    hint: 'Usa `page.frameLocator("iframe")` para obtener un frame locator, luego opera sobre él normalmente.',
+      'Dada una página con un `<iframe>` que contiene un formulario, accede a su contenido con un frame locator, rellena un campo dentro del iframe y verifica el resultado. (Se construye la página con `page.setContent`, así el test no depende de ningún sitio externo.)',
+    hint: 'Usa `page.frameLocator("iframe")` (o mejor `page.frameLocator("#id")`) y opera sobre él con los mismos locators (`getByLabel`, `getByRole`...). Los frame locators reintentan solos.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('interactuar con iframe', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/iframe');
-  const frame = page.frameLocator('#mce_0_ifr');
-  await frame.locator('body').fill('Texto dentro del iframe');
-  await expect(frame.locator('body')).toContainText('Texto dentro del iframe');
+  await page.setContent(\`
+    <h1>Página anfitriona</h1>
+    <iframe id="pago-frame" srcdoc="
+      <label>Nombre <input id='n'></label>
+      <button onclick='document.getElementById(&quot;out&quot;).textContent = document.getElementById(&quot;n&quot;).value'>Enviar</button>
+      <p id='out'></p>"></iframe>
+  \`);
+
+  const frame = page.frameLocator('#pago-frame');
+  await frame.getByLabel('Nombre').fill('Ana García');
+  await frame.getByRole('button', { name: 'Enviar' }).click();
+
+  await expect(frame.locator('#out')).toHaveText('Ana García');
+  await expect(page.getByRole('heading')).toHaveText('Página anfitriona');
 });`,
   },
   {
@@ -556,23 +613,30 @@ test('interactuar con iframe', async ({ page }) => {
     title: 'Implementar Page Object Model básico',
     difficulty: 'intermediate',
     description:
-      'Crea una clase `TodoPage` que encapsule las acciones de la demo TodoMVC: `addTask(text)`, `completeTask(index)`, `getTaskCount()`. Escribe un test que use esta clase.',
-    hint: 'La clase recibe `page` en el constructor. Los métodos usan `this.page.locator(...)`.',
-    solution: `import { test, expect, Page } from '@playwright/test';
+      'Crea una clase `TodoPage` que encapsule la demo TodoMVC: locators como propiedades y acciones `addTask(text)` y `completeTask(text)`. Escribe un test que use la clase y verifique con assertions web-first (las assertions viven en el test, no en el POM).',
+    hint: 'La clase recibe `page` en el constructor y define los locators UNA vez como `readonly`. Los métodos hacen acciones; el test hace las assertions con `expect(todo.items)...`.',
+    solution: `import { test, expect, type Locator, type Page } from '@playwright/test';
 
 class TodoPage {
-  constructor(private page: Page) {}
+  readonly newTodo: Locator;
+  readonly items: Locator;
 
-  async goto() { await this.page.goto('https://demo.playwright.dev/todomvc'); }
+  constructor(private readonly page: Page) {
+    this.newTodo = page.getByPlaceholder('What needs to be done?');
+    this.items = page.getByTestId('todo-item');
+  }
+
+  async goto() {
+    await this.page.goto('https://demo.playwright.dev/todomvc');
+  }
+
   async addTask(text: string) {
-    await this.page.getByPlaceholder('What needs to be done?').fill(text);
-    await this.page.getByPlaceholder('What needs to be done?').press('Enter');
+    await this.newTodo.fill(text);
+    await this.newTodo.press('Enter');
   }
-  async completeTask(index: number) {
-    await this.page.locator('.todo-list li .toggle').nth(index).click();
-  }
-  async getTaskCount() {
-    return this.page.locator('.todo-list li').count();
+
+  async completeTask(text: string) {
+    await this.items.filter({ hasText: text }).getByRole('checkbox').check();
   }
 }
 
@@ -581,9 +645,10 @@ test('POM básico', async ({ page }) => {
   await todo.goto();
   await todo.addTask('Primera');
   await todo.addTask('Segunda');
-  await todo.completeTask(0);
-  await expect(page.locator('.todo-list li')).toHaveCount(2);
-  await expect(page.locator('.todo-list li').first()).toHaveClass(/completed/);
+  await todo.completeTask('Primera');
+
+  await expect(todo.items).toHaveCount(2);
+  await expect(todo.items.first()).toHaveClass(/completed/);
 });`,
   },
   {
@@ -592,21 +657,19 @@ test('POM básico', async ({ page }) => {
     title: 'Esperas condicionales con waitFor',
     difficulty: 'intermediate',
     description:
-      'Espera a que un elemento cambie de estado: primero aparece un loader, luego desaparece y aparece el contenido. Espera cada transición explícitamente.',
-    hint: 'Combina `locator.waitFor({ state: "hidden" })` y `locator.waitFor({ state: "visible" })`.',
+      'En `https://practice.expandtesting.com/dynamic-loading/2`, tras pulsar "Start" primero aparece un loader, luego desaparece y aparece el contenido. Espera cada transición explícitamente.',
+    hint: 'Usa assertions web-first sobre el loader: `expect(loader).toBeVisible()` y luego `expect(loader).toBeHidden()`. (`locator.waitFor({ state })` también sirve cuando no necesitas assertion.)',
     solution: `import { test, expect } from '@playwright/test';
 
 test('esperar transición loader → contenido', async ({ page }) => {
-  await page.goto('https://the-internet.herokuapp.com/dynamic_loading/2');
+  await page.goto('https://practice.expandtesting.com/dynamic-loading/2');
   await page.getByRole('button', { name: 'Start' }).click();
 
-  const loader = page.locator('#loading');
-  await loader.waitFor({ state: 'visible' });
-  await loader.waitFor({ state: 'hidden' });
+  const loader = page.getByText('Loading...');
+  await expect(loader).toBeVisible();
+  await expect(loader).toBeHidden({ timeout: 10_000 });
 
-  const finish = page.locator('#finish');
-  await expect(finish).toBeVisible();
-  await expect(finish).toContainText('Hello World!');
+  await expect(page.getByRole('heading', { name: 'Hello World!' })).toBeVisible();
 });`,
   },
   {
@@ -615,19 +678,15 @@ test('esperar transición loader → contenido', async ({ page }) => {
     title: 'Simular dispositivo móvil',
     difficulty: 'intermediate',
     description:
-      'Ejecuta un test simulando un iPhone 12. Verifica que la página muestra el menú hamburguesa en lugar del menú de escritorio.',
-    hint: 'Usa `devices["iPhone 12"]` de Playwright y pásalo a `browser.newContext({ ...devices["iPhone 12"] })`.',
+      'Ejecuta un test simulando un iPhone 12. Verifica que la página muestra el botón del menú hamburguesa (barra de navegación colapsada).',
+    hint: 'Usa `test.use({ ...devices["iPhone 12"] })` a nivel de archivo o `describe`: Playwright crea el contexto por ti y lo cierra solo. En un proyecto real, defínelo como `project` en la config.',
     solution: `import { test, expect, devices } from '@playwright/test';
 
-test('vista móvil iPhone 12', async ({ browser }) => {
-  const context = await browser.newContext({ ...devices['iPhone 12'] });
-  const page = await context.newPage();
+test.use({ ...devices['iPhone 12'] });
 
+test('vista móvil iPhone 12', async ({ page }) => {
   await page.goto('https://playwright.dev');
-  // Verifica que el header es responsive
-  const viewport = page.viewportSize();
-  expect(viewport?.width).toBe(390);
-  await context.close();
+  await expect(page.getByRole('button', { name: 'Toggle navigation bar' })).toBeVisible();
 });`,
   },
   {
@@ -636,45 +695,48 @@ test('vista móvil iPhone 12', async ({ browser }) => {
     title: 'Manejar autenticación HTTP Basic',
     difficulty: 'intermediate',
     description:
-      'Accede a `https://practice.expandtesting.com/basic-auth` protegida con HTTP Basic Auth. Las credenciales del sitio están documentadas en su página: usuario `practice` y la contraseña indicada en el sitio. Verifica el mensaje de bienvenida.',
-    hint: 'Usa `browser.newContext({ httpCredentials: { username, password } })`. Guarda las credenciales en variables de entorno, no en el código.',
+      'Accede a `https://practice.expandtesting.com/basic-auth`, protegida con HTTP Basic Auth (usuario y contraseña publicados en el propio sitio: `admin` / `admin`). Verifica el mensaje de bienvenida.',
+    hint: 'Usa `test.use({ httpCredentials: { username, password } })`. En proyectos reales, lee las credenciales de variables de entorno, nunca del código.',
     solution: `import { test, expect } from '@playwright/test';
 
-test('autenticación HTTP Basic en practice.expandtesting.com', async ({ browser }) => {
-  // Credenciales publicadas en practice.expandtesting.com/basic-auth
-  // Guárdalas en .env: BASIC_USER=practice  BASIC_PASS=<ver sitio>
-  const context = await browser.newContext({
-    httpCredentials: {
-      username: process.env.BASIC_USER ?? 'practice',
-      password: process.env.BASIC_PASS ?? '',
-    },
-  });
-  const page = await context.newPage();
+// Credenciales públicas de práctica. En un proyecto real: process.env.BASIC_USER / BASIC_PASS
+test.use({
+  httpCredentials: {
+    username: process.env.BASIC_USER ?? 'admin',
+    password: process.env.BASIC_PASS ?? 'admin',
+  },
+});
+
+test('autenticación HTTP Basic', async ({ page }) => {
   await page.goto('https://practice.expandtesting.com/basic-auth');
-  await expect(page.locator('p')).toContainText('Congratulations');
-  await context.close();
+  await expect(page.getByText('Congratulations! You must have the proper credentials.')).toBeVisible();
 });`,
   },
   {
     id: 'ej-i12',
     num: 'I12',
-    title: 'Parametrizar tests con test.each',
+    title: 'Parametrizar tests con un bucle',
     difficulty: 'intermediate',
     description:
-      'Escribe un test parametrizado que verifique que 5 URLs distintas responden con status 200 y contienen un `<h1>`.',
-    hint: 'Usa `test.each([ [url1], [url2], ... ])("descripción %s", async ({ page }, url) => { ... })`.',
+      'Genera un test por cada una de 5 URLs distintas: cada uno verifica que la página responde con status 200 y muestra un `<h1>`. (Playwright no tiene `test.each`: se parametriza con un bucle que declara los tests.)',
+    hint: 'Recorre un array con `for (const url of urls) { test(`...${url}`, ...) }`. El título de cada test debe ser único e incluir el parámetro.',
     solution: `import { test, expect } from '@playwright/test';
 
 const urls = [
   'https://playwright.dev',
   'https://playwright.dev/docs/intro',
   'https://playwright.dev/docs/api/class-page',
+  'https://playwright.dev/docs/locators',
+  'https://playwright.dev/docs/test-assertions',
 ];
 
-test.each(urls)('página %s tiene encabezado', async ({ page }, url) => {
-  await page.goto(url);
-  await expect(page.locator('h1').first()).toBeVisible();
-});`,
+for (const url of urls) {
+  test(\`página \${url} responde 200 y tiene encabezado\`, async ({ page }) => {
+    const response = await page.goto(url);
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  });
+}`,
   },
   {
     id: 'ej-i13',
@@ -683,23 +745,36 @@ test.each(urls)('página %s tiene encabezado', async ({ page }, url) => {
     difficulty: 'intermediate',
     description:
       'Crea una suite de tests para TodoMVC donde `beforeEach` navega y agrega una tarea base, y `afterEach` verifica que no quedaron errores en consola.',
-    hint: '`test.beforeEach` y `test.afterEach` reciben el mismo objeto `{ page }` que los tests.',
+    hint: '`test.beforeEach` y `test.afterEach` reciben el mismo objeto `{ page }` que los tests. Registra `page.on("console", ...)` en `beforeEach` y comprueba el array en `afterEach`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test.describe('TodoMVC suite', () => {
+  let consoleErrors: string[];
+
   test.beforeEach(async ({ page }) => {
+    consoleErrors = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+
     await page.goto('https://demo.playwright.dev/todomvc');
-    await page.getByPlaceholder('What needs to be done?').fill('Tarea base');
-    await page.getByPlaceholder('What needs to be done?').press('Enter');
+    const input = page.getByPlaceholder('What needs to be done?');
+    await input.fill('Tarea base');
+    await input.press('Enter');
+  });
+
+  test.afterEach(() => {
+    expect(consoleErrors, 'No debe haber errores en consola').toEqual([]);
   });
 
   test('la tarea base está visible', async ({ page }) => {
-    await expect(page.getByText('Tarea base')).toBeVisible();
+    await expect(page.getByTestId('todo-title')).toHaveText('Tarea base');
   });
 
   test('se puede completar la tarea base', async ({ page }) => {
-    await page.locator('.todo-list li .toggle').click();
-    await expect(page.locator('.todo-list li')).toHaveClass(/completed/);
+    const item = page.getByTestId('todo-item');
+    await item.getByRole('checkbox', { name: 'Toggle Todo' }).check();
+    await expect(item).toHaveClass(/completed/);
   });
 });`,
   },
@@ -729,24 +804,35 @@ test('pre-poblar localStorage', async ({ page }) => {
     title: 'Verificar respuesta de API con waitForResponse',
     difficulty: 'intermediate',
     description:
-      'Espera la respuesta de un endpoint específico al cargar la página. Verifica que el status es 200 y que el body JSON contiene las propiedades esperadas.',
-    hint: 'Usa `page.waitForResponse(urlOrPredicate)` antes de la acción que dispara la llamada.',
+      'En la app de notas de `practice.expandtesting.com`, crea un usuario único por API, haz login por la interfaz y espera la respuesta del endpoint de login. Verifica que el status es 200 y que el body JSON contiene las propiedades esperadas.',
+    hint: 'Prepara los datos con `request` (API) en lugar de la UI. Crea `page.waitForResponse(...)` ANTES del clic que dispara la llamada y `await` después. Verifica con `response.status()` y `await response.json()`.',
     solution: `import { test, expect } from '@playwright/test';
 
-test('verificar respuesta de API en practice.expandtesting.com', async ({ page }) => {
-  // La API de notas devuelve JSON — primero hacemos login para obtener token
-  const [response] = await Promise.all([
-    page.waitForResponse(res =>
-      res.url().includes('/notes/api/users/login') && res.status() === 200
-    ),
-    page.goto('https://practice.expandtesting.com/login'),
-  ]);
+test('verificar respuesta de la API de login', async ({ page, request }) => {
+  // Datos de prueba únicos creados por API: el test es independiente y repetible
+  const email = \`qa-\${Date.now()}@example.com\`;
+  const password = 'Test1234!';
+  const created = await request.post('https://practice.expandtesting.com/notes/api/users/register', {
+    data: { name: 'QA User', email, password },
+  });
+  expect(created.status()).toBe(201);
 
-  // Tras cargar el login, verificamos que la respuesta de la API tiene estructura esperada
-  // (En flujo real: llenar form, click Login, capturar respuesta POST /login)
-  // Aquí verificamos la respuesta de la petición inicial de la página:
-  const status = response.status();
-  expect([200, 302, 404].includes(status)).toBe(true);
+  await page.goto('https://practice.expandtesting.com/notes/app/login');
+  await page.getByTestId('login-email').fill(email);
+  await page.getByTestId('login-password').fill(password);
+
+  // La espera se crea ANTES de la acción que dispara la llamada
+  const responsePromise = page.waitForResponse(
+    res => res.url().includes('/notes/api/users/login') && res.request().method() === 'POST'
+  );
+  await page.getByTestId('login-submit').click();
+  const response = await responsePromise;
+
+  expect(response.status()).toBe(200);
+  expect(await response.json()).toMatchObject({
+    success: true,
+    data: { email, token: expect.any(String) },
+  });
 });`,
   },
   {
@@ -774,24 +860,28 @@ test('locator encadenado en tabla', async ({ page }) => {
     difficulty: 'intermediate',
     description:
       'Crea un fixture `authenticatedPage` que navegue y haga login automáticamente. Úsalo en múltiples tests para no repetir el flujo de autenticación.',
-    hint: 'Extiende `test` con `test.extend({ myFixture: async ({ page }, use) => { ... await use(page); } })`.',
-    solution: `import { test as base, expect } from '@playwright/test';
+    hint: 'Extiende `test` con `base.extend({ myFixture: async ({ page }, use) => { ... await use(page); } })`. Lee las credenciales de variables de entorno.',
+    solution: `import { test as base, expect, type Page } from '@playwright/test';
 
-// Primero registra un usuario en /register, luego usa esas credenciales aquí
-const test = base.extend<{ loggedPage: typeof base['prototype'] }>({
+// Credenciales públicas de práctica; en un proyecto real vienen de process.env
+const test = base.extend<{ loggedPage: Page }>({
   loggedPage: async ({ page }, use) => {
     await page.goto('https://practice.expandtesting.com/login');
-    await page.getByPlaceholder('Email').fill('tu-email@test.com');
-    await page.getByPlaceholder('Password').fill('Tu1234!');
+    await page.getByLabel('Username').fill(process.env.PRACTICE_USER ?? 'practice');
+    await page.getByLabel('Password', { exact: true }).fill(process.env.PRACTICE_PASS ?? 'SuperSecretPassword!');
     await page.getByRole('button', { name: 'Login' }).click();
-    await page.waitForURL('https://practice.expandtesting.com/notes');
+    await expect(page).toHaveURL(/\\/secure/);
     await use(page);
   },
 });
 
-test('ver notas del usuario autenticado', async ({ loggedPage }) => {
-  await expect(loggedPage).toHaveURL(/notes/);
-  await expect(loggedPage.getByRole('heading', { name: /notes|mis notas/i })).toBeVisible();
+test('ver el área segura autenticado', async ({ loggedPage }) => {
+  await expect(loggedPage.getByRole('heading', { level: 1 })).toContainText('Secure Area');
+});
+
+test('cerrar sesión desde el área segura', async ({ loggedPage }) => {
+  await loggedPage.getByRole('link', { name: 'Logout' }).click();
+  await expect(loggedPage).toHaveURL(/\\/login/);
 });`,
   },
   {
@@ -801,28 +891,26 @@ test('ver notas del usuario autenticado', async ({ loggedPage }) => {
     difficulty: 'intermediate',
     description:
       'Guarda las cookies después de un login exitoso. En un segundo contexto, carga esas cookies y verifica que el usuario sigue autenticado sin repetir el login.',
-    hint: 'Usa `context.cookies()` para guardar y `context.addCookies(cookies)` para restaurar.',
+    hint: 'Usa `context.storageState()` para guardar y `browser.newContext({ storageState })` para restaurar (incluye cookies y localStorage). Evita pasar cookies a mano si no es necesario.',
     solution: `import { test, expect } from '@playwright/test';
 
-test('persistir sesión en practice.expandtesting.com', async ({ browser }) => {
-  // Contexto 1: login → guardar cookies
+test('persistir sesión sin repetir login', async ({ browser }) => {
+  // Contexto 1: login → guardar el estado de sesión
   const ctx1 = await browser.newContext();
   const page1 = await ctx1.newPage();
   await page1.goto('https://practice.expandtesting.com/login');
-  await page1.getByPlaceholder('Email').fill('tu-email@test.com');
-  await page1.getByPlaceholder('Password').fill('Tu1234!');
+  await page1.getByLabel('Username').fill('practice');
+  await page1.getByLabel('Password', { exact: true }).fill('SuperSecretPassword!');
   await page1.getByRole('button', { name: 'Login' }).click();
-  await page1.waitForURL('https://practice.expandtesting.com/notes');
-  const cookies = await ctx1.cookies();
+  await expect(page1).toHaveURL(/\\/secure/);
+  const storageState = await ctx1.storageState();
   await ctx1.close();
 
-  // Contexto 2: restaurar cookies → acceder directo a /notes sin login
-  const ctx2 = await browser.newContext();
-  await ctx2.addCookies(cookies);
+  // Contexto 2: restaurar → acceso directo sin login
+  const ctx2 = await browser.newContext({ storageState });
   const page2 = await ctx2.newPage();
-  await page2.goto('https://practice.expandtesting.com/notes');
-  // Si las cookies son válidas, no redirige al login:
-  await expect(page2).toHaveURL(/notes/);
+  await page2.goto('https://practice.expandtesting.com/secure');
+  await expect(page2.getByRole('heading', { level: 1 })).toContainText('Secure Area');
   await ctx2.close();
 });`,
   },
@@ -839,13 +927,13 @@ test('persistir sesión en practice.expandtesting.com', async ({ browser }) => {
 test('soft assertions en formulario de registro', async ({ page }) => {
   await page.goto('https://practice.expandtesting.com/register');
 
-  await expect.soft(page.getByPlaceholder('Name')).toBeVisible();
-  await expect.soft(page.getByPlaceholder('Email')).toBeEnabled();
-  await expect.soft(page.getByPlaceholder('Password')).toHaveAttribute('type', 'password');
-  await expect.soft(page.getByPlaceholder('Confirm Password')).toHaveAttribute('type', 'password');
+  await expect.soft(page.getByLabel('Username')).toBeVisible();
+  await expect.soft(page.getByLabel('Username')).toBeEnabled();
+  await expect.soft(page.getByLabel('Password', { exact: true })).toHaveAttribute('type', 'password');
+  await expect.soft(page.getByLabel('Confirm Password')).toHaveAttribute('type', 'password');
   await expect.soft(page.getByRole('button', { name: 'Register' })).toBeVisible();
 
-  // El test reporta todos los fallos juntos al finalizar
+  // El test falla al final si alguna soft assertion falló, listando todos los fallos
 });`,
   },
   {
@@ -855,17 +943,18 @@ test('soft assertions en formulario de registro', async ({ page }) => {
     difficulty: 'intermediate',
     description:
       'Usa `page.evaluate()` para ejecutar código JavaScript directamente en el contexto de la página y obtener información que no está en el DOM (p. ej., una variable global o el resultado de un cálculo).',
-    hint: '`page.evaluate(fn)` ejecuta `fn` en el contexto del browser y devuelve el resultado serializado.',
+    hint: '`page.evaluate(fn)` ejecuta `fn` en el browser y devuelve el resultado serializado. Úsalo solo cuando no exista un locator o assertion para lo que necesitas.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('ejecutar JS en el browser', async ({ page }) => {
   await page.goto('https://playwright.dev');
 
   const devicePixelRatio = await page.evaluate(() => window.devicePixelRatio);
-  expect(typeof devicePixelRatio).toBe('number');
+  expect(devicePixelRatio).toBeGreaterThan(0);
 
-  const scrollHeight = await page.evaluate(() => document.body.scrollHeight);
-  expect(scrollHeight).toBeGreaterThan(500);
+  // Se puede pasar un argumento serializable al navegador
+  const suma = await page.evaluate(([a, b]) => a + b, [2, 3]);
+  expect(suma).toBe(5);
 });`,
   },
   {
@@ -875,12 +964,12 @@ test('ejecutar JS en el browser', async ({ page }) => {
     difficulty: 'intermediate',
     description:
       'Usa el matcher `toHaveScreenshot()` para hacer una comparación visual de un componente. La primera vez crea el snapshot base; las siguientes detectan diferencias.',
-    hint: 'En la primera ejecución, corre con `--update-snapshots` para crear el baseline. Después, corre normalmente.',
+    hint: 'Primera ejecución: `npx playwright test --update-snapshots` crea el baseline. Después, corre normal. Genera siempre los baselines en el mismo OS/browser que CI (p. ej. Docker): el render cambia entre plataformas.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('visual regression del header', async ({ page }) => {
   await page.goto('https://playwright.dev');
-  await expect(page.locator('header').first()).toHaveScreenshot('header-baseline.png', {
+  await expect(page.getByRole('navigation', { name: 'Main' })).toHaveScreenshot('header-baseline.png', {
     maxDiffPixels: 10,
   });
 });`,
@@ -892,18 +981,24 @@ test('visual regression del header', async ({ page }) => {
     difficulty: 'intermediate',
     description:
       'Bloquea todas las peticiones de imágenes para acelerar la carga de la página. Verifica que la página carga igual de bien sin imágenes.',
-    hint: 'Usa `page.route("**/*.{png,jpg,jpeg,webp,gif}", route => route.abort())`.',
+    hint: 'Usa `page.route("**/*", ...)` y decide por `route.request().resourceType()`: es más robusto que listar extensiones. Comprueba el bloqueo con el evento `requestfailed`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('bloquear imágenes para acelerar carga', async ({ page }) => {
-  await page.route('**/*.{png,jpg,jpeg,webp,gif,svg}', route => route.abort());
+  const blocked: string[] = [];
+  page.on('requestfailed', req => {
+    if (req.resourceType() === 'image') blocked.push(req.url());
+  });
+
+  await page.route('**/*', route =>
+    route.request().resourceType() === 'image' ? route.abort() : route.continue()
+  );
 
   await page.goto('https://playwright.dev');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  // La página cargó sin imágenes
-  const images = await page.locator('img').all();
-  // Las imágenes existen en el DOM pero su src fue bloqueado
-  expect(images.length).toBeGreaterThanOrEqual(0);
+
+  // La página funciona sin imágenes y realmente se bloquearon
+  await expect.poll(() => blocked.length).toBeGreaterThan(0);
 });`,
   },
 
@@ -914,30 +1009,46 @@ test('bloquear imágenes para acelerar carga', async ({ page }) => {
     title: 'Autenticación persistente con storageState',
     difficulty: 'advanced',
     description:
-      'Crea un `globalSetup` que hace login una sola vez y guarda el estado de autenticación en disco. Todos los tests del proyecto reutilizan ese estado sin repetir el login.',
-    hint: 'En `globalSetup`, usa `browser.newPage()`, haz login, llama `context.storageState({ path })`. Configura `storageState` en `playwright.config.ts`.',
-    solution: `// global-setup.ts
-import { chromium } from '@playwright/test';
+      'Crea un proyecto `setup` que hace login una sola vez y guarda el estado de autenticación en disco. Los demás proyectos dependen de él y reutilizan ese estado sin repetir el login.',
+    hint: 'Recomendado por Playwright en lugar de `globalSetup`: un proyecto `setup` con `dependencies`. Guarda con `page.context().storageState({ path })`, usa `storageState` en el proyecto principal y añade el archivo a `.gitignore`.',
+    solution: `// tests/auth.setup.ts
+import { test as setup, expect } from '@playwright/test';
 
-export default async function globalSetup() {
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-  // Usar practice.expandtesting.com — registra un usuario antes de correr este setup
+const authFile = 'playwright/.auth/user.json'; // añadir a .gitignore
+
+setup('authenticate', async ({ page }) => {
   await page.goto('https://practice.expandtesting.com/login');
-  await page.getByPlaceholder('Email').fill('tu-email@test.com');
-  await page.getByPlaceholder('Password').fill('Tu1234!');
+  await page.getByLabel('Username').fill(process.env.PRACTICE_USER ?? 'practice');
+  await page.getByLabel('Password', { exact: true }).fill(process.env.PRACTICE_PASS ?? 'SuperSecretPassword!');
   await page.getByRole('button', { name: 'Login' }).click();
-  await page.waitForURL('https://practice.expandtesting.com/notes');
-  await page.context().storageState({ path: 'auth.json' });
-  await browser.close();
-}
+  await expect(page).toHaveURL(/\\/secure/);
+  await page.context().storageState({ path: authFile });
+});
 
 // playwright.config.ts
-export default {
-  globalSetup: './global-setup.ts',
-  use: { storageState: 'auth.json' },
-  // Todos los tests arrancan ya autenticados en /notes
-};`,
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,           // falla si queda un test.only en CI
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  use: {
+    baseURL: 'https://practice.expandtesting.com',
+    trace: 'on-first-retry',               // trace viewer: lo recomendado para depurar en CI
+  },
+  projects: [
+    { name: 'setup', testMatch: /auth\\.setup\\.ts/ },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json' },
+      dependencies: ['setup'],
+    },
+    // Añade firefox y webkit igual que chromium para probar en todos los navegadores
+  ],
+});`,
   },
   {
     id: 'ej-a02',
@@ -946,44 +1057,49 @@ export default {
     difficulty: 'advanced',
     description:
       'Implementa un POM completo con: `BasePage` (métodos comunes), `LoginPage extends BasePage`, `DashboardPage extends BasePage`. Escribe tests E2E que usen las tres clases.',
-    hint: 'La `BasePage` guarda `this.page` y define helpers como `waitForToast()`. Las páginas hijas definen sus locators como propiedades.',
-    solution: `import { Page, expect } from '@playwright/test';
+    hint: 'La `BasePage` guarda `this.page` y define helpers comunes. Las páginas hijas definen sus locators como propiedades `readonly` y solo exponen acciones; las assertions van en el test.',
+    solution: `import { test, expect, type Page } from '@playwright/test';
 
 class BasePage {
-  constructor(protected page: Page) {}
-  async waitForToast(msg: string) {
-    await expect(this.page.locator('.toast')).toContainText(msg);
+  constructor(protected readonly page: Page) {}
+
+  get flash() {
+    return this.page.getByRole('alert');
   }
 }
 
 class LoginPage extends BasePage {
-  readonly emailInput = this.page.getByLabel('Email');
-  readonly passwordInput = this.page.getByLabel('Password');
-  readonly submitBtn = this.page.getByRole('button', { name: 'Login' });
+  readonly username = this.page.getByLabel('Username');
+  readonly password = this.page.getByLabel('Password', { exact: true });
+  readonly submit = this.page.getByRole('button', { name: 'Login' });
 
-  async goto() { await this.page.goto('https://practice.expandtesting.com/login'); }
-  async login(email: string, pass: string) {
-    await this.emailInput.fill(email);
-    await this.passwordInput.fill(pass);
-    await this.submitBtn.click();
+  async goto() {
+    await this.page.goto('https://practice.expandtesting.com/login');
+  }
+
+  async login(user: string, pass: string) {
+    await this.username.fill(user);
+    await this.password.fill(pass);
+    await this.submit.click();
   }
 }
 
-class NotesPage extends BasePage {
-  readonly heading = this.page.getByRole('heading', { name: /notes/i });
-  readonly addNoteBtn = this.page.getByRole('button', { name: /add note|new note|\+/i });
-  async isLoaded() { return this.heading.isVisible(); }
+class SecurePage extends BasePage {
+  readonly heading = this.page.getByRole('heading', { level: 1 });
+  readonly logout = this.page.getByRole('link', { name: 'Logout' });
 }
 
-// test
-import { test } from '@playwright/test';
-test('login E2E con POM en practice.expandtesting.com', async ({ page }) => {
+test('login y logout E2E con POM', async ({ page }) => {
   const login = new LoginPage(page);
   await login.goto();
-  await login.login('tu-email@test.com', 'Tu1234!');
-  await page.waitForURL('https://practice.expandtesting.com/notes');
-  const notes = new NotesPage(page);
-  await expect(notes.heading).toBeVisible();
+  await login.login('practice', 'SuperSecretPassword!');
+
+  const secure = new SecurePage(page);
+  await expect(secure.heading).toContainText('Secure Area');
+  await expect(secure.flash).toContainText('You logged into a secure area!');
+
+  await secure.logout.click();
+  await expect(page).toHaveURL(/\\/login/);
 });`,
   },
   {
@@ -993,40 +1109,54 @@ test('login E2E con POM en practice.expandtesting.com', async ({ page }) => {
     difficulty: 'advanced',
     description:
       'Configura tu proyecto para ejecutar tests en 4 shards paralelos en CI. Escribe el pipeline de GitHub Actions que combina los reportes de todos los shards.',
-    hint: 'Usa `--shard=1/4`, `--shard=2/4`, etc. En CI, usa la strategy matrix de GitHub Actions. Combina con `merge-reports`.',
-    solution: `# .github/workflows/playwright.yml
+    hint: 'Usa `--shard=1/4`... en una matrix de GitHub Actions. Configura el reporter `blob` en CI para poder combinarlos después con `merge-reports`, y sube el reporte también cuando fallen los tests (`if: ${{ !cancelled() }}`).',
+    solution: `# playwright.config.ts → reporter: process.env.CI ? 'blob' : 'html'
+
+# .github/workflows/playwright.yml
 name: Playwright Tests
 on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
       - run: npm ci
       - run: npx playwright install --with-deps
-      - run: npx playwright test --shard=\${{ matrix.shard }}/4
-        env:
-          CI: true
+      - run: npx playwright test --shard=\${{ matrix.shardIndex }}/\${{ matrix.shardTotal }}
       - uses: actions/upload-artifact@v4
+        if: \${{ !cancelled() }}
         with:
-          name: blob-report-\${{ matrix.shard }}
+          name: blob-report-\${{ matrix.shardIndex }}
           path: blob-report/
+          retention-days: 1
 
   merge-reports:
+    if: \${{ !cancelled() }}
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
       - uses: actions/download-artifact@v4
         with:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
-      - run: npx playwright merge-reports --reporter html ./all-blob-reports`,
+      - run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - uses: actions/upload-artifact@v4
+        with:
+          name: html-report
+          path: playwright-report/`,
   },
   {
     id: 'ej-a04',
@@ -1035,25 +1165,22 @@ jobs:
     difficulty: 'advanced',
     description:
       'Graba las peticiones de red de tu app en un archivo HAR. Luego reproduce ese HAR en tests offline, sin necesidad del servidor real.',
-    hint: 'Graba con `page.routeFromHAR(path, { update: true })`. En tests, usa `page.routeFromHAR(path)` sin `update`.',
+    hint: 'Graba con `page.routeFromHAR(path, { update: true })` y reproduce con `page.routeFromHAR(path, { url, update: false })`. Controla el modo con una variable de entorno, no editando el código.',
     solution: `import { test, expect } from '@playwright/test';
 
-// Paso 1: grabar (ejecutar una vez con UPDATE_HAR=true)
-// Paso 2: reproducir en tests normales
+// Grabar: UPDATE_HAR=1 npx playwright test  ·  Reproducir: npx playwright test
+const update = !!process.env.UPDATE_HAR;
+
 test('reproducir HAR grabado', async ({ page }) => {
   await page.routeFromHAR('./fixtures/api-responses.har', {
     url: '**/api/**',
-    update: false,
+    update,
   });
 
   await page.goto('https://mi-app.ejemplo.com');
   // La app usa las respuestas del HAR en lugar del servidor real
   await expect(page.getByText('Datos desde HAR')).toBeVisible();
-});
-
-// Script de grabación (ejecutar manualmente):
-// npx playwright test --headed --update-snapshots
-// con page.routeFromHAR('./fixtures/api-responses.har', { update: true })`,
+});`,
   },
   {
     id: 'ej-a05',
@@ -1062,7 +1189,7 @@ test('reproducir HAR grabado', async ({ page }) => {
     difficulty: 'advanced',
     description:
       'Integra `axe-playwright` para hacer un audit de accesibilidad WCAG 2.1 AA en cada página principal de tu app. Falla el test si hay violaciones de severidad "critical" o "serious".',
-    hint: 'Instala `axe-playwright`, importa `checkA11y`, llámalo con `{ runOnly: { type: "tag", values: ["wcag2aa"] } }`.',
+    hint: 'Instala `axe-playwright`, importa `injectAxe` y `checkA11y`. Filtra por severidad con `includedImpacts: ["critical", "serious"]` y por reglas con `axeOptions.runOnly`.',
     solution: `import { test } from '@playwright/test';
 import { checkA11y, injectAxe } from 'axe-playwright';
 
@@ -1074,11 +1201,10 @@ for (const path of PAGES) {
     await injectAxe(page);
     await checkA11y(page, undefined, {
       detailedReport: true,
-      detailedReportOptions: { html: true },
+      includedImpacts: ['critical', 'serious'],
       axeOptions: {
-        runOnly: { type: 'tag', values: ['wcag2aa', 'wcag2a'] },
+        runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa'] },
       },
-      violationFilters: [{ severity: ['critical', 'serious'] }],
     });
   });
 }`,
@@ -1090,27 +1216,26 @@ for (const path of PAGES) {
     difficulty: 'advanced',
     description:
       'Simula una conexión 3G lenta (750 kbps, latencia 100ms). Verifica que la página muestra un skeleton/loader durante la carga y que la app sigue siendo usable.',
-    hint: 'Usa `page.emulateNetworkConditions({ offline: false, downloadThroughput: ... , uploadThroughput: ..., latency: ... })`.',
+    hint: 'Playwright no tiene `page.emulateNetworkConditions`: usa una sesión CDP (`context.newCDPSession(page)`) con `Network.emulateNetworkConditions`. Solo funciona en Chromium, así que salta el test en otros browsers.',
     solution: `import { test, expect } from '@playwright/test';
 
-test('UI con red 3G lenta', async ({ page }) => {
-  // Simular conexión 3G Regular
-  const cdpSession = await page.context().newCDPSession(page);
-  await cdpSession.send('Network.emulateNetworkConditions', {
+test('UI con red 3G lenta', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'CDP solo está disponible en Chromium');
+
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Network.emulateNetworkConditions', {
     offline: false,
-    downloadThroughput: (750 * 1024) / 8,  // 750 kbps
-    uploadThroughput: (250 * 1024) / 8,    // 250 kbps
+    downloadThroughput: (750 * 1024) / 8, // 750 kbps
+    uploadThroughput: (250 * 1024) / 8,   // 250 kbps
     latency: 100,
   });
 
-  await page.goto('https://mi-app.ejemplo.com');
+  // 'commit' devuelve en cuanto llega la respuesta: así vemos el estado de carga
+  await page.goto('https://mi-app.ejemplo.com', { waitUntil: 'commit' });
 
-  // El skeleton debe aparecer durante la carga
-  const skeleton = page.locator('.skeleton');
-  // Puede aparecer brevemente — no siempre capturamos el estado intermedio
-
-  // La app debe cargarse eventualmente
+  await expect(page.getByTestId('skeleton').first()).toBeVisible();
   await expect(page.getByRole('main')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId('skeleton')).toHaveCount(0);
 });`,
   },
   {
@@ -1179,30 +1304,28 @@ test('simular error en mutación GraphQL', async ({ page }) => {
   {
     id: 'ej-a09',
     num: 'A09',
-    title: 'Test retry y análisis de flakiness',
+    title: 'Reintentos (retries) y detección de flakiness',
     difficulty: 'advanced',
     description:
-      'Configura `retries: 2` en el proyecto. Escribe un test que simula flakiness con un contador global. Verifica que el mecanismo de retry funciona y el test pasa eventualmente.',
-    hint: 'En `playwright.config.ts`, `retries: 2`. Usa `test.info().retry` dentro del test para saber en qué intento estás.',
+      'Configura `retries: 2` en el proyecto y escribe un test que falla en los dos primeros intentos y pasa en el tercero (simulando flakiness). Verifica que el mecanismo funciona y recuerda: un retry que "salva" un test es una señal para investigar, no una solución.',
+    hint: 'Lee `testInfo.retry` (0 en el primer intento) en lugar de un contador global: es estado de Playwright, no de tu módulo. El reporte marca estos tests como "flaky".',
     solution: `// playwright.config.ts
-export default {
-  retries: 2,
-  reporter: [['html'], ['list']],
-};
+import { defineConfig } from '@playwright/test';
 
-// flaky.test.ts
+export default defineConfig({
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  reporter: [['html'], ['list']],
+  use: { trace: 'on-first-retry' }, // la traza solo se graba al reintentar
+});
+
+// flaky.spec.ts
 import { test, expect } from '@playwright/test';
 
-let callCount = 0;
-
-test('test con retry (falla 2 veces, pasa a la 3a)', async ({ page }) => {
-  callCount++;
-  console.log(\`Intento \${test.info().retry + 1}\`);
-
-  if (callCount < 3) {
-    // Simular fallo (en tests reales sería una condición de carrera)
-    throw new Error(\`Fallo intencional en intento \${callCount}\`);
-  }
+test('falla 2 veces, pasa a la 3a', async ({ page }, testInfo) => {
+  // Simulación de fallo intermitente (en tests reales sería una condición de carrera)
+  expect(testInfo.retry, 'fallo simulado').toBeGreaterThanOrEqual(2);
 
   await page.goto('https://playwright.dev');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -1214,29 +1337,24 @@ test('test con retry (falla 2 veces, pasa a la 3a)', async ({ page }) => {
     title: 'WebSocket: verificar mensajes en tiempo real',
     difficulty: 'advanced',
     description:
-      'Usa la CDP (Chrome DevTools Protocol) para monitorear los frames de un WebSocket. Verifica que la app recibe el mensaje esperado del servidor.',
-    hint: 'Usa `page.on("websocket", ws => ws.on("framesent"/"framereceived", ...))` para monitorear WebSockets.',
+      'Monitorea un WebSocket con los eventos de Playwright (sin CDP) y verifica que la app recibe el mensaje esperado del servidor.',
+    hint: 'Usa `page.waitForEvent("websocket")` y luego `ws.waitForEvent("framereceived", predicate)`. Crea las esperas ANTES de navegar.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('monitorear mensajes WebSocket', async ({ page }) => {
-  const wsMessages: string[] = [];
-
-  page.on('websocket', ws => {
-    ws.on('framereceived', frame => {
-      if (typeof frame.payload === 'string') {
-        wsMessages.push(frame.payload);
-      }
-    });
-  });
-
+  // Esperar el WebSocket ANTES de navegar
+  const wsPromise = page.waitForEvent('websocket');
   await page.goto('https://mi-app-ws.ejemplo.com');
-  // Esperar a que llegue un mensaje específico
-  await page.waitForFunction(
-    () => (window as any).__wsReceived,
-    { timeout: 10_000 }
-  );
+  const ws = await wsPromise;
 
-  expect(wsMessages.some(msg => msg.includes('connected'))).toBe(true);
+  const frame = await ws.waitForEvent('framereceived', {
+    predicate: f => String(f.payload).includes('connected'),
+    timeout: 10_000,
+  });
+  expect(JSON.parse(String(frame.payload))).toMatchObject({ status: 'connected' });
+
+  // La UI también refleja el estado
+  await expect(page.getByTestId('connection-status')).toHaveText('connected');
 });`,
   },
   {
@@ -1247,7 +1365,7 @@ test('monitorear mensajes WebSocket', async ({ page }) => {
     description:
       'Crea un reporter personalizado que extienda `Reporter` de Playwright. Genera un JSON con métricas de cada test: duración, intentos, status, y un screenshot del fallo si existe.',
     hint: 'Implementa la clase con `onTestEnd(test, result)`. Guarda un `result.attachments` para screenshots en fallo.',
-    solution: `import { Reporter, TestCase, TestResult, FullConfig } from '@playwright/test/reporter';
+    solution: `import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter';
 import fs from 'fs';
 
 class MetricsReporter implements Reporter {
@@ -1270,16 +1388,14 @@ class MetricsReporter implements Reporter {
   }
 
   onEnd() {
-    fs.writeFileSync(
-      'test-metrics.json',
-      JSON.stringify(this.results, null, 2)
-    );
+    fs.writeFileSync('test-metrics.json', JSON.stringify(this.results, null, 2));
     console.log(\`Reporte guardado: test-metrics.json (\${this.results.length} tests)\`);
   }
 }
 
 export default MetricsReporter;
-// En playwright.config.ts: reporter: [['./metrics-reporter.ts']]`,
+// playwright.config.ts: reporter: [['list'], ['./metrics-reporter.ts']]
+// Y usa \`screenshot: "only-on-failure"\` para que existan capturas de fallo`,
   },
   {
     id: 'ej-a12',
@@ -1288,26 +1404,24 @@ export default MetricsReporter;
     difficulty: 'advanced',
     description:
       'Dada una lista de tarjetas de productos con precio y botón "Agregar", usa locators encadenados para encontrar la tarjeta más barata (primer ítem del sort) y hacer clic en su botón.',
-    hint: 'Encadena `.filter({ has: locator })` y `.nth(0)`. O filtra por `hasText` para encontrar el precio mínimo después de extraerlo. Tras ordenar, prefiere `waitForResponse(/productos/)` en lugar de `waitForLoadState("networkidle")` — más determinista.',
+    hint: 'Espera la respuesta del orden con `waitForResponse` (creada ANTES de `selectOption`) y localiza las tarjetas con `getByTestId`. Evita `waitForLoadState("networkidle")`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('agregar el producto más barato', async ({ page }) => {
   await page.goto('https://mi-tienda.ejemplo.com/productos');
 
-  // Ordenar por precio ascendente
+  // Ordenar y esperar la respuesta de la API que devuelve el nuevo orden
+  const sorted = page.waitForResponse(res => res.url().includes('/api/productos') && res.url().includes('sort=price-asc') && res.ok());
   await page.getByRole('combobox', { name: /ordenar/i }).selectOption('price-asc');
-  // ⚠️ networkidle puede fallar con conexiones abiertas; usa waitForResponse si la API devuelve los resultados
-  await page.waitForLoadState('networkidle');
+  await sorted;
 
-  // El primero en la lista es el más barato
-  const tarjetas = page.locator('.product-card');
-  const primeraTarjeta = tarjetas.first();
+  // El primero de la lista ordenada es el más barato
+  const cheapest = page.getByTestId('product-card').first();
+  const price = await cheapest.getByTestId('price').innerText();
+  await cheapest.getByRole('button', { name: /agregar/i }).click();
 
-  const precio = await primeraTarjeta.locator('.price').textContent();
-  await primeraTarjeta.getByRole('button', { name: /agregar/i }).click();
-
-  await expect(page.locator('.cart-count')).toHaveText('1');
-  await expect(page.locator('.cart-summary')).toContainText(precio!.trim());
+  await expect(page.getByTestId('cart-count')).toHaveText('1');
+  await expect(page.getByTestId('cart-summary')).toContainText(price);
 });`,
   },
   {
@@ -1317,34 +1431,32 @@ test('agregar el producto más barato', async ({ page }) => {
     difficulty: 'advanced',
     description:
       'Mide el LCP (Largest Contentful Paint) y el CLS (Cumulative Layout Shift) de tu home page. Falla el test si LCP > 2500ms o CLS > 0.1.',
-    hint: 'Usa `page.evaluate()` con `PerformanceObserver` o `performance.getEntriesByType()` para obtener métricas.',
+    hint: 'Instala los `PerformanceObserver` con `page.addInitScript` ANTES de navegar y lee los valores con `expect.poll`: sin `setTimeout` ni `networkidle`. Los umbrales dependen del entorno; úsalos como presupuesto, no como medida exacta.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('Web Vitals: LCP y CLS', async ({ page }) => {
-  // ⚠️ waitUntil: 'networkidle' frágil con polling/websockets; prefiere 'load' o 'domcontentloaded' en la mayoría de casos
-  await page.goto('https://mi-app.ejemplo.com', { waitUntil: 'networkidle' });
-
-  const vitals = await page.evaluate(async () => {
-    return new Promise<{ lcp: number; cls: number }>(resolve => {
-      let lcp = 0, cls = 0;
-      new PerformanceObserver(list => {
-        lcp = list.getEntries().at(-1)?.startTime ?? 0;
-      }).observe({ type: 'largest-contentful-paint', buffered: true });
-
-      new PerformanceObserver(list => {
-        for (const entry of list.getEntries()) {
-          cls += (entry as any).value;
-        }
-      }).observe({ type: 'layout-shift', buffered: true });
-
-      // 2000ms: margen para que los PerformanceObservers capturen entradas tardías (LCP puede dispararse después de carga)
-      setTimeout(() => resolve({ lcp, cls }), 2000);
-    });
+  // Los observers se registran antes de que cargue la página
+  await page.addInitScript(() => {
+    const w = window as any;
+    w.__vitals = { lcp: 0, cls: 0 };
+    new PerformanceObserver(list => {
+      w.__vitals.lcp = list.getEntries().at(-1)?.startTime ?? w.__vitals.lcp;
+    }).observe({ type: 'largest-contentful-paint', buffered: true });
+    new PerformanceObserver(list => {
+      for (const entry of list.getEntries() as any[]) {
+        if (!entry.hadRecentInput) w.__vitals.cls += entry.value;
+      }
+    }).observe({ type: 'layout-shift', buffered: true });
   });
 
-  console.log('LCP:', vitals.lcp, 'CLS:', vitals.cls);
-  expect(vitals.lcp).toBeLessThan(2500);
-  expect(vitals.cls).toBeLessThan(0.1);
+  await page.goto('https://mi-app.ejemplo.com');
+
+  // Esperar a que exista un LCP, sin sleeps fijos
+  await expect.poll(() => page.evaluate(() => (window as any).__vitals.lcp)).toBeGreaterThan(0);
+
+  const vitals = await page.evaluate(() => (window as any).__vitals as { lcp: number; cls: number });
+  expect(vitals.lcp, 'LCP').toBeLessThan(2500);
+  expect(vitals.cls, 'CLS').toBeLessThan(0.1);
 });`,
   },
   {
@@ -1391,33 +1503,23 @@ export async function createUser(page: Page, overrides: Partial<UserData> = {}):
     title: 'Test de PWA: offline y service worker',
     difficulty: 'advanced',
     description:
-      'Verifica que tu PWA funciona offline. Carga la app, activa el modo offline con CDP, recarga la página y verifica que el service worker sirve el contenido cacheado.',
-    hint: 'Activa offline con `cdp.send("Network.emulateNetworkConditions", { offline: true, ... })` después de la primera carga.',
+      'Verifica que tu PWA funciona offline. Carga la app, espera al service worker, pasa el contexto a modo offline, recarga y verifica que el service worker sirve el contenido cacheado.',
+    hint: 'Usa `context.setOffline(true)` (API nativa, sin CDP) después de la primera carga y `await navigator.serviceWorker.ready` para esperar al SW.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('PWA funciona offline', async ({ page, context }) => {
-  // 1. Cargar la app y esperar que el SW se instale
+  // 1. Cargar la app y esperar a que el service worker esté activo
   await page.goto('https://mi-pwa.ejemplo.com');
-  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  await page.evaluate(() => navigator.serviceWorker.ready);
 
-  // 2. Activar modo offline
-  const cdp = await context.newCDPSession(page);
-  await cdp.send('Network.emulateNetworkConditions', {
-    offline: true,
-    downloadThroughput: 0,
-    uploadThroughput: 0,
-    latency: 0,
-  });
-
-  // 3. Recargar y verificar que el SW sirve la cache
+  // 2. Pasar a offline y recargar: debe servir la caché
+  await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('main')).toBeVisible({ timeout: 10_000 });
-  await expect(page.getByText('Sin conexión')).not.toBeVisible();
+  await expect(page.getByRole('main')).toBeVisible();
+  await expect(page.getByText('Sin conexión')).toBeHidden();
 
-  // 4. Volver online
-  await cdp.send('Network.emulateNetworkConditions', {
-    offline: false, downloadThroughput: -1, uploadThroughput: -1, latency: 0,
-  });
+  // 3. Volver online
+  await context.setOffline(false);
 });`,
   },
   {
@@ -1427,31 +1529,27 @@ test('PWA funciona offline', async ({ page, context }) => {
     difficulty: 'advanced',
     description:
       'Usa Playwright Component Testing para montar un componente React aislado. Verifica sus props, estado y eventos sin necesidad de levantar toda la app.',
-    hint: 'Instala `@playwright/experimental-ct-react`. Los tests usan `mount()` del paquete especial.',
-    solution: `// button.test.tsx (ct)
+    hint: 'Instala `@playwright/experimental-ct-react`. Los tests usan `mount()` y las mismas assertions web-first. Para eventos, pasa un callback y verifícalo con `expect.poll` o con una promesa.',
+    solution: `// button.spec.tsx (component testing)
 import { test, expect } from '@playwright/experimental-ct-react';
 import { Button } from './Button';
 
 test('Button renderiza con texto y dispara onClick', async ({ mount }) => {
-  let clicked = false;
+  let clicks = 0;
   const component = await mount(
-    <Button label="Guardar" onClick={() => { clicked = true; }} />
+    <Button label="Guardar" onClick={() => { clicks++; }} />
   );
 
   await expect(component).toContainText('Guardar');
   await component.click();
-  expect(clicked).toBe(true);
+  await expect.poll(() => clicks).toBe(1);
 });
 
-test('Button deshabilitado no dispara onClick', async ({ mount }) => {
-  let clicked = false;
-  const component = await mount(
-    <Button label="Guardar" disabled onClick={() => { clicked = true; }} />
-  );
+test('Button deshabilitado no es interactivo', async ({ mount }) => {
+  const component = await mount(<Button label="Guardar" disabled />);
 
+  // Un usuario real no puede pulsarlo: basta con verificar el estado (nada de click con force)
   await expect(component).toBeDisabled();
-  await component.click({ force: true });
-  expect(clicked).toBe(false);
 });`,
   },
   {
@@ -1461,24 +1559,24 @@ test('Button deshabilitado no dispara onClick', async ({ mount }) => {
     difficulty: 'advanced',
     description:
       'Intercepta todas las peticiones a tu API e inyecta un header de autenticación personalizado (`X-API-Key`). Verifica que las peticiones llegan con el header correcto.',
-    hint: 'En `page.route()`, usa `route.continue({ headers: { ...request.headers(), "X-API-Key": "valor" } })`.',
+    hint: 'En `page.route()`, usa `route.continue({ headers: { ...request.headers(), "X-API-Key": valor } })`. Lee la clave de una variable de entorno y espera a que ocurra la petición con `expect.poll`, no con `networkidle`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('inyectar header de autenticación', async ({ page }) => {
-  const capturedHeaders: Record<string, string>[] = [];
+  const apiKey = process.env.API_KEY ?? 'test-key';
+  const injected: Record<string, string>[] = [];
 
   await page.route('**/api/**', async (route, request) => {
-    const headers = { ...request.headers(), 'X-API-Key': 'mi-api-key-secreta' };
-    capturedHeaders.push(headers);
+    const headers = { ...request.headers(), 'x-api-key': apiKey };
+    injected.push(headers);
     await route.continue({ headers });
   });
 
   await page.goto('https://mi-app.ejemplo.com');
-  await page.waitForLoadState('networkidle');
 
-  const apiRequests = capturedHeaders.filter(h => h['x-api-key']);
-  expect(apiRequests.length).toBeGreaterThan(0);
-  expect(apiRequests[0]['x-api-key']).toBe('mi-api-key-secreta');
+  // Esperar a que se intercepte al menos una llamada a la API
+  await expect.poll(() => injected.length).toBeGreaterThan(0);
+  expect(injected[0]['x-api-key']).toBe(apiKey);
 });`,
   },
   {
@@ -1488,25 +1586,22 @@ test('inyectar header de autenticación', async ({ page }) => {
     difficulty: 'advanced',
     description:
       'Usa `expect.poll()` para verificar el estado de una operación asíncrona larga que no refleja en el DOM directamente. Escucha llamadas a la API cada 500ms hasta que el resultado sea el esperado.',
-    hint: '`expect.poll(async () => { return await page.evaluate(...); }, { intervals: [500], timeout: 15000 })`.',
+    hint: '`expect.poll(async () => ..., { intervals, timeout })`. Dentro, usa `page.request.get(...)` (comparte cookies con la página) en vez de `page.evaluate(fetch)`.',
     solution: `import { test, expect } from '@playwright/test';
 
 test('esperar resultado con expect.poll', async ({ page }) => {
   await page.goto('https://mi-app.ejemplo.com/jobs');
-
-  // Disparar un job largo
   await page.getByRole('button', { name: 'Iniciar proceso' }).click();
 
-  const jobId = await page.getByTestId('job-id').textContent();
+  const jobIdLocator = page.getByTestId('job-id');
+  await expect(jobIdLocator).not.toBeEmpty();
+  const jobId = await jobIdLocator.innerText();
 
-  // Esperar que el job complete verificando la API periódicamente
+  // Consultar la API periódicamente hasta que el job termine
   await expect.poll(
     async () => {
-      const response = await page.evaluate(async (id) => {
-        const res = await fetch(\`/api/jobs/\${id}/status\`);
-        return res.json();
-      }, jobId);
-      return response.status;
+      const res = await page.request.get(new URL(\`/api/jobs/\${jobId}/status\`, page.url()).href);
+      return (await res.json()).status;
     },
     { intervals: [500, 1000, 2000], timeout: 30_000, message: 'El job no completó a tiempo' }
   ).toBe('completed');
@@ -1529,6 +1624,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -1559,7 +1655,7 @@ jobs:
         run: npx playwright test --project=\${{ matrix.browser }}
 
       - name: Upload report
-        if: always()
+        if: \${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-\${{ matrix.browser }}
@@ -1570,65 +1666,46 @@ jobs:
         if: failure()
         uses: slackapi/slack-github-action@v1
         with:
+          webhook-type: incoming-webhook
           payload: |
-            {"text": "Playwright \${{ matrix.browser }} falló en \${{ github.ref_name }} — ver: \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}"}
+            {"text": "Playwright \${{ matrix.browser }} falló en \${{ github.ref_name }} — \${{ github.server_url }}/\${{ github.repository }}/actions/runs/\${{ github.run_id }}"}
         env:
           SLACK_WEBHOOK_URL: \${{ secrets.SLACK_WEBHOOK_URL }}`,
   },
   {
     id: 'ej-a20',
     num: 'A20',
-    title: 'Implementar test runner personalizado con fases',
+    title: 'Helper de escenarios con test.step',
     difficulty: 'advanced',
     description:
-      'Crea un helper `runScenario(page, steps)` donde `steps` es un array de funciones con nombre. Ejecuta cada step, mide su duración y genera un reporte estructurado al terminar.',
-    hint: 'Cada step es `{ name: string, run: (page) => Promise<void> }`. Captura `Date.now()` antes y después de cada uno.',
-    solution: `import { Page } from '@playwright/test';
+      'Crea un helper `runScenario(page, steps)` donde `steps` es un array de pasos con nombre. Cada paso debe aparecer como `test.step` en el reporte HTML/trace, registrar su duración y NO ocultar los fallos (si un paso falla, el test falla).',
+    hint: 'Envuelve cada paso en `test.step(name, fn)`: Playwright ya mide su duración y muestra el árbol en el reporte. No captures errores con `try/catch` a menos que los vuelvas a lanzar.',
+    solution: `import { test, expect, type Page } from '@playwright/test';
 
 interface Step {
   name: string;
   run: (page: Page) => Promise<void>;
 }
 
-interface StepResult {
-  name: string;
-  status: 'passed' | 'failed';
-  duration: number;
-  error?: string;
-}
-
-export async function runScenario(page: Page, steps: Step[]): Promise<StepResult[]> {
-  const results: StepResult[] = [];
-
+export async function runScenario(page: Page, steps: Step[]) {
   for (const step of steps) {
     const start = Date.now();
-    try {
-      await step.run(page);
-      results.push({ name: step.name, status: 'passed', duration: Date.now() - start });
-    } catch (err) {
-      results.push({
-        name: step.name, status: 'failed',
-        duration: Date.now() - start,
-        error: err instanceof Error ? err.message : String(err),
-      });
-      break; // o continuar con \`continue\` si quieres todos los pasos
-    }
+    // test.step aparece en el reporte y en el trace; si falla, el test falla
+    await test.step(step.name, () => step.run(page));
+    test.info().annotations.push({
+      type: 'step-duration',
+      description: \`\${step.name}: \${Date.now() - start}ms\`,
+    });
   }
-
-  const total = results.reduce((s, r) => s + r.duration, 0);
-  const failed = results.filter(r => r.status === 'failed');
-  console.table(results.map(r => ({ ...r, duration: \`\${r.duration}ms\` })));
-  console.log(\`Total: \${total}ms | Passed: \${results.length - failed.length} | Failed: \${failed.length}\`);
-
-  return results;
 }
 
-// Uso en test:
-// const results = await runScenario(page, [
-//   { name: 'Login', run: async p => { await p.goto('/login'); ... } },
-//   { name: 'Ver dashboard', run: async p => { await expect(p.getByText('Home')).toBeVisible(); } },
-// ]);
-// expect(results.every(r => r.status === 'passed')).toBe(true);`,
+// Uso:
+test('flujo de login y dashboard', async ({ page }) => {
+  await runScenario(page, [
+    { name: 'Login', run: async p => { await p.goto('https://mi-app.ejemplo.com/login'); /* ... */ } },
+    { name: 'Ver dashboard', run: async p => { await expect(p.getByText('Home')).toBeVisible(); } },
+  ]);
+});`,
   },
   {
     id: 'ej-a21',
@@ -1637,7 +1714,7 @@ export async function runScenario(page: Page, steps: Step[]): Promise<StepResult
     difficulty: 'advanced',
     description:
       'Escribe un test que verifica las meta tags SEO críticas de cada página: `title`, `description`, `og:title`, `og:image`, `canonical`. Usa un fixture que itera sobre las páginas del sitemap.',
-    hint: 'Usa `page.locator("meta[name=description]").getAttribute("content")` para leer meta tags.',
+    hint: 'Usa assertions web-first sobre el `<meta>`: `expect(locator).toHaveAttribute("content", /regex/)` reintenta y da mejor mensaje de error que leer el valor y comparar a mano. `expect(page).toHaveTitle(regex)` para el título.',
     solution: `import { test, expect } from '@playwright/test';
 
 const PAGES = [
@@ -1650,27 +1727,16 @@ for (const p of PAGES) {
   test(\`SEO meta tags — \${p.url}\`, async ({ page }) => {
     await page.goto(\`https://mi-sitio.ejemplo.com\${p.url}\`);
 
-    // Title
-    const title = await page.title();
-    expect(title.length).toBeGreaterThan(p.minTitleLen);
-    expect(title.length).toBeLessThan(70);
+    await expect(page).toHaveTitle(new RegExp(\`^.{\${p.minTitleLen},70}$\`));
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /^.{50,160}$/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      new RegExp(\`\${p.url === '/' ? '/$' : p.url}\`)
+    );
 
-    // Description
-    const desc = await page.locator('meta[name="description"]').getAttribute('content');
-    expect(desc).not.toBeNull();
-    expect(desc!.length).toBeGreaterThan(50);
-    expect(desc!.length).toBeLessThan(160);
-
-    // Canonical
-    const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
-    expect(canonical).toContain(p.url);
-
-    // Open Graph (si aplica)
     if (p.hasOG) {
-      const ogTitle = await page.locator('meta[property="og:title"]').getAttribute('content');
-      const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content');
-      expect(ogTitle).not.toBeNull();
-      expect(ogImage).toMatch(/^https?:\/\//);
+      await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', /.+/);
+      await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /^https?:\\/\\//);
     }
   });
 }`,
@@ -1686,7 +1752,7 @@ for (const p of PAGES) {
     solution: `import { test, expect } from '@playwright/test';
 
 test('checkout completo con pago simulado', async ({ page }) => {
-  // Mock del procesador de pago (Stripe/PayPal/etc)
+  // Mock del procesador de pago (Stripe/PayPal/etc): nunca se cobra una tarjeta real
   await page.route('**/api/payments/process', async route => {
     await route.fulfill({
       status: 200,
@@ -1700,20 +1766,21 @@ test('checkout completo con pago simulado', async ({ page }) => {
     });
   });
 
-  // Flujo de compra
   await page.goto('https://mi-tienda.ejemplo.com');
-  await page.locator('.product-card').first().getByRole('button', { name: 'Agregar' }).click();
+  await page.getByTestId('product-card').first().getByRole('button', { name: 'Agregar' }).click();
   await page.getByRole('link', { name: 'Carrito' }).click();
   await page.getByRole('button', { name: 'Pagar' }).click();
 
-  // Llenar checkout
   await page.getByLabel('Email').fill('cliente@test.com');
   await page.getByLabel('Número de tarjeta').fill('4242 4242 4242 4242');
   await page.getByLabel('Fecha').fill('12/26');
   await page.getByLabel('CVC').fill('123');
-  await page.getByRole('button', { name: 'Confirmar pago' }).click();
 
-  // Verificar confirmación
+  // Verificar también lo que la app ENVÍA al procesador
+  const paymentRequest = page.waitForRequest('**/api/payments/process');
+  await page.getByRole('button', { name: 'Confirmar pago' }).click();
+  expect((await paymentRequest).postDataJSON()).toMatchObject({ email: 'cliente@test.com' });
+
   await expect(page).toHaveURL(/confirmacion/);
   await expect(page.getByText('Pago exitoso')).toBeVisible();
   await expect(page.getByText('cliente@test.com')).toBeVisible();

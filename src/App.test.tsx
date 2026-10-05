@@ -22,3 +22,18 @@ describe('App', () => {
     expect(screen.queryByText('Ruta de Aprendizaje')).not.toBeInTheDocument();
   });
 });
+
+describe('App global search', () => {
+  it('opens with Ctrl+K, finds a section and closes on select', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    localStorage.setItem('lang', 'es');
+    render(<LocaleProvider><App /></LocaleProvider>);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await user.keyboard('{Control>}k{/Control}');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await user.type(screen.getByRole('combobox'), 'locators');
+    await user.keyboard('{Enter}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
