@@ -32,10 +32,10 @@ const nextRequestId = () => ++requestCounter;
 interface MetaRequest { id: string; target: string; n: number; toggle?: boolean }
 
 /** Scroll to an element and flash it so the eye can find it. */
-function revealElement(targetId: string) {
+function revealElement(targetId: string, block: ScrollLogicalPosition = 'center') {
   const el = document.getElementById(targetId);
   if (!el) return;
-  el.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  el.scrollIntoView?.({ behavior: 'smooth', block });
   el.classList.remove('search-flash');
   void el.offsetWidth; // restart animation if already flashing
   el.classList.add('search-flash');
@@ -63,7 +63,9 @@ function MetaSection({ id, icon, title, badge, request, children }: {
       return;
     }
     apply(true);
-    window.setTimeout(() => revealElement(request.target), 420);
+    // Whole section as target (sidebar link): align its top. Centering a ~7000px tall section would land in the middle of it.
+    const block = request.target === id ? 'start' : 'center';
+    window.setTimeout(() => revealElement(request.target, block), 420);
   }, [request, id]);
   return (
     <div className={`section meta${open ? ' open' : ''}`} id={id}>

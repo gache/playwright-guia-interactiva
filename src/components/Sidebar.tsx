@@ -39,6 +39,8 @@ function Highlight({ text, query }: { text: string; query: string }) {
 
 export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTotal, exercisesDone = 0, exercisesTotal = 0, mobileOpen, collapsed, onMobileClose, onToggleCollapse }: SidebarProps) {
   const [query, setQuery] = useState('');
+  // Level groups start collapsed (compact sidebar); a search expands the matching ones
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const q = query.toLowerCase().trim();
   const { locale } = useLocale();
   const t = strings[locale];
@@ -122,8 +124,14 @@ export function Sidebar({ sections, activeId, visited, quizAnsweredCount, quizTo
             const doneCount = items.filter(s => visited.includes(s.id)).length;
             if (groupHidden) return null;
             return (
-              <details key={group} className="nav-section-group" open>
-                <summary className="nav-group">
+              <details key={group} className="nav-section-group" open={q.length > 0 || !!expanded[group]}>
+                <summary
+                  className="nav-group"
+                  onClick={e => {
+                    e.preventDefault();
+                    if (q.length === 0) setExpanded(prev => ({ ...prev, [group]: !prev[group] }));
+                  }}
+                >
                   {group}
                   <span className="nav-group-progress">
                     <span className="nav-group-done">{doneCount}</span>

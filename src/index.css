@@ -761,6 +761,21 @@
   .ex-solution-actions { display: flex; gap: 8px; align-items: stretch; margin-top: 8px; }
   .ex-solution-actions .ex-hide-bar { margin-top: 0; flex: 1; }
 
+  /* Reading size: one wide column, bigger type and code */
+  .ex-size { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .ex-size-label { font: 600 11px 'Inter', sans-serif; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+  .ex-grid[data-size="large"] { grid-template-columns: minmax(0, 1fr); max-width: 1040px; margin-inline: auto; gap: 18px; }
+  .ex-grid[data-size="large"] .ex-card { padding: 22px 26px; gap: 12px; }
+  .ex-grid[data-size="large"] .ex-num { font-size: 12px; min-width: 36px; }
+  .ex-grid[data-size="large"] .ex-title { font-size: 21px; }
+  .ex-grid[data-size="large"] .ex-desc { font-size: 17px; line-height: 1.75; }
+  .ex-grid[data-size="large"] .ex-badge { font-size: 12px; padding: 3px 10px; }
+  .ex-grid[data-size="large"] .ex-btn, .ex-grid[data-size="large"] .ex-close, .ex-grid[data-size="large"] .ex-hide-bar { font-size: 13.5px; padding: 8px 16px; }
+  .ex-grid[data-size="large"] .ex-hint { font-size: 15px; line-height: 1.7; padding: 12px 16px; }
+  .ex-grid[data-size="large"] .ex-checks label { font-size: 15px; }
+  .ex-grid[data-size="large"] .cb pre, .ex-grid[data-size="large"] .cb code { font-size: 15.5px; line-height: 1.8; }
+  .ex-grid[data-size="large"] .cb-head { padding-block: 10px; }
+
   /* Keyboard focus must always be visible */
   .sec-head:focus-visible, .ex-btn:focus-visible, .ex-filter:focus-visible, .ex-close:focus-visible,
   .ex-hide-bar:focus-visible, .meta-collapse:focus-visible, .copy-btn:focus-visible, .diff-filter-btn:focus-visible {

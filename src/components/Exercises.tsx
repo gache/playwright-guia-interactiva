@@ -14,6 +14,13 @@ export interface ExerciseFilter {
   status: ExerciseStatus;
   query: string;
 }
+export type CardSize = 'normal' | 'large';
+const SIZE_KEY = 'pwguide_ex_size';
+
+function loadSize(): CardSize {
+  try { return localStorage.getItem(SIZE_KEY) === 'large' ? 'large' : 'normal'; } catch { return 'normal'; }
+}
+
 export const DEFAULT_EXERCISE_FILTER: ExerciseFilter = { diff: 'all', status: 'all', query: '' };
 
 type Strings = typeof strings[keyof typeof strings];
@@ -157,6 +164,11 @@ export function Exercises({
   const filter = controlled ?? local;
   const setFilter = (next: ExerciseFilter) => (onFilterChange ?? setLocal)(next);
   const [closeSignal, setCloseSignal] = useState(0);
+  const [size, setSizeState] = useState<CardSize>(loadSize);
+  const setSize = (next: CardSize) => {
+    setSizeState(next);
+    try { localStorage.setItem(SIZE_KEY, next); } catch { /* storage unavailable: keep it for this session */ }
+  };
   const { locale } = useLocale();
   const t = strings[locale];
   const DIFF_LABEL: Record<Exercise['difficulty'], string> = {
@@ -243,6 +255,14 @@ export function Exercises({
           ))}
         </div>
         <button className="ex-btn" onClick={() => setCloseSignal(n => n + 1)}>{t.closeAllSolutions}</button>
+        <div className="ex-size" role="group" aria-label={t.sizeAria}>
+          <span className="ex-size-label">{t.sizeLabel}</span>
+          {(['normal', 'large'] as const).map(z => (
+            <button key={z} className={`ex-filter${size === z ? ' active' : ''}`} aria-pressed={size === z} onClick={() => setSize(z)}>
+              {z === 'normal' ? t.sizeNormal : t.sizeLarge}
+            </button>
+          ))}
+        </div>
       </div>
 
       {filtered.length === 0 && (
@@ -255,7 +275,7 @@ export function Exercises({
       {filtered.map(({ diff, label, items }) => (
         <section key={diff} className="ex-group">
           <h2 className="ex-group-title">{label}</h2>
-          <div className="ex-grid">
+          <div className="ex-grid" data-size={size}>
             {items.map(ex => (
               <ExerciseCard
                 key={ex.id}

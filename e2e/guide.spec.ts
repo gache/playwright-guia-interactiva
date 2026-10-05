@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { scrollSettled } from './helpers';
 
 const exercisesSection = (page: Page) => page.locator('section#ejercicios, div#ejercicios').first();
 
@@ -7,6 +8,9 @@ const sidebarExercises = (page: Page) => page.locator('#sidebar a[href="#ejercic
 async function openExercises(page: Page) {
   await sidebarExercises(page).click();
   await expect(exercisesSection(page)).toHaveClass(/open/);
+  // The delayed "reveal" scroll (~420 ms) must finish before interacting, or the page moves under the click
+  await expect.poll(() => exercisesSection(page).evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(120);
+  await scrollSettled(page);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -179,6 +183,31 @@ test.describe('exercises section', () => {
     expect((await download).suggestedFilename()).toBe('B01.spec.ts');
   });
 
+  test('the large reading size makes cards wider with bigger text and is remembered', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openExercises(page);
+    const card = page.locator('#ej-b01');
+    const metrics = () => card.evaluate(el => ({
+      width: Math.round(el.getBoundingClientRect().width),
+      desc: parseFloat(getComputedStyle(el.querySelector('.ex-desc')!).fontSize),
+    }));
+    const normal = await metrics();
+
+    await page.getByRole('button', { name: 'Grande', exact: true }).click();
+    await expect(page.locator('.ex-grid').first()).toHaveAttribute('data-size', 'large');
+    await expect.poll(async () => (await metrics()).desc).toBeGreaterThan(normal.desc);
+    await expect.poll(async () => (await metrics()).width).toBeGreaterThan(normal.width);
+
+    await card.getByRole('button', { name: /Ver solución/ }).click();
+    await expect.poll(() => card.locator('.cb pre').evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(15);
+
+    await page.reload();
+    await openExercises(page);
+    await expect(page.locator('.ex-grid').first()).toHaveAttribute('data-size', 'large');
+    await page.getByRole('button', { name: 'Normal', exact: true }).click();
+    await expect(page.locator('.ex-grid').first()).toHaveAttribute('data-size', 'normal');
+  });
+
   test('every card shows what it runs against', async ({ page }) => {
     await openExercises(page);
     await expect(page.locator('#ej-b01 .ex-badge-real')).toBeVisible();
@@ -213,6 +242,34 @@ test.describe('lessons', () => {
     await first.locator('.sec-head').click();
     await first.getByRole('button', { name: /Marcar como completada/ }).click();
     await page.reload();
+    await page.locator('#sidebar summary', { hasText: 'Principiante' }).click();
     await expect(page.locator('#sidebar a.done').first()).toBeVisible();
+  });
+});
+
+test.describe('sidebar', () => {
+  const group = (page: Page, name: RegExp) => page.locator('#sidebar details.nav-section-group', { has: page.locator('summary', { hasText: name }) });
+
+  test('level groups are collapsed by default and expand on click', async ({ page }) => {
+    for (const name of [/Principiante/, /Intermedio/, /Avanzado/]) {
+      await expect(group(page, name)).not.toHaveAttribute('open', '');
+      await expect(group(page, name).locator('a').first()).toBeHidden();
+    }
+    // the compact view still shows progress and the exercises entry
+    await expect(page.locator('#sidebar a[href="#ejercicios"]')).toBeVisible();
+
+    await group(page, /Principiante/).locator('summary').click();
+    await expect(group(page, /Principiante/)).toHaveAttribute('open', '');
+    await expect(group(page, /Principiante/).locator('a').first()).toBeVisible();
+    await expect(group(page, /Intermedio/)).not.toHaveAttribute('open', '');
+
+    await group(page, /Principiante/).locator('summary').click();
+    await expect(group(page, /Principiante/)).not.toHaveAttribute('open', '');
+  });
+
+  test('searching expands the groups that have matches', async ({ page }) => {
+    await page.getByPlaceholder('Buscar sección…').fill('Instalación');
+    await expect(group(page, /Principiante/)).toHaveAttribute('open', '');
+    await expect(page.locator('#sidebar').getByRole('link', { name: /Instalación/ })).toBeVisible();
   });
 });
