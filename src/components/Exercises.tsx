@@ -34,6 +34,15 @@ export function exerciseKind(solution: string): Kind {
   return 'self';
 }
 
+/** Renders `inline code` (backticks) as <code> so exercise text reads like documentation, not raw markdown. */
+export function renderInline(text: string) {
+  return text.split(/(`[^`]+`)/g).map((part, i) =>
+    part.length > 2 && part.startsWith('`') && part.endsWith('`')
+      ? <code key={i}>{part.slice(1, -1)}</code>
+      : part,
+  );
+}
+
 const isRunnableSpec = (s: string) => /from '@playwright\/test'/.test(s) && /\btest\(/.test(s) && !/defineConfig/.test(s);
 
 function downloadSpec(ex: Exercise) {
@@ -76,7 +85,7 @@ function ExerciseCard({ ex, t, done, checks, closeSignal, onToggleDone, onToggle
   };
 
   return (
-    <div className={`ex-card${showSolution ? ' solution-open' : ''}${done ? ' ex-done' : ''}`} id={ex.id}>
+    <div data-diff={ex.difficulty} className={`ex-card${showSolution ? ' solution-open' : ''}${done ? ' ex-done' : ''}`} id={ex.id}>
       <div className="ex-head">
         <span className="ex-num">{ex.num}</span>
         <h3 className="ex-title">{ex.title}</h3>
@@ -92,7 +101,10 @@ function ExerciseCard({ ex, t, done, checks, closeSignal, onToggleDone, onToggle
         {chromiumOnly && <span className="ex-badge ex-badge-chromium">{t.chromiumOnly}</span>}
         {done && <span className="ex-badge ex-badge-done">{t.markedDone}</span>}
       </div>
-      <p className="ex-desc">{ex.description}</p>
+      <div className="ex-task">
+        <span className="ex-task-label">🎯 {t.taskLabel}</span>
+        <p className="ex-desc">{renderInline(ex.description)}</p>
+      </div>
       <div className="ex-actions">
         <button className="ex-btn" aria-expanded={showHint} onClick={() => setShowHint(v => !v)}>
           {showHint ? t.hideHint : t.showHint}
@@ -111,7 +123,7 @@ function ExerciseCard({ ex, t, done, checks, closeSignal, onToggleDone, onToggle
       <div className={`ex-anim${showHint ? ' open' : ''}`} aria-hidden={!showHint} {...inertWhen(!showHint)}>
         <div className="ex-anim-clip">
           <div className="ex-hint">
-            <span className="ex-hint-label">{t.hintLabel}</span> {ex.hint}
+            <span className="ex-hint-label">{t.hintLabel}</span> {renderInline(ex.hint)}
           </div>
         </div>
       </div>

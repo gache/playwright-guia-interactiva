@@ -650,7 +650,7 @@
   .ex-group { margin-bottom: 40px; }
   .ex-group-title { font-size: 14px; font-weight: 700; letter-spacing: 0.3px; margin-bottom: 14px;
     padding-bottom: 8px; border-bottom: 1px solid var(--border); color: var(--text-dim); }
-  .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; }
+  .ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 12px; }
 
   .ex-card {
     border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
@@ -775,6 +775,64 @@
   .ex-grid[data-size="large"] .ex-checks label { font-size: 15px; }
   .ex-grid[data-size="large"] .cb pre, .ex-grid[data-size="large"] .cb code { font-size: 15.5px; line-height: 1.8; }
   .ex-grid[data-size="large"] .cb-head { padding-block: 10px; }
+
+  /* Task statement: the part a learner reads first, so it gets its own highlighted panel */
+  .ex-card { --task-accent: var(--green); --task-rgb: 61, 214, 140; }
+  .ex-card[data-diff="intermediate"] { --task-accent: var(--yellow); --task-rgb: 253, 230, 138; }
+  .ex-card[data-diff="advanced"] { --task-accent: var(--orange); --task-rgb: 251, 146, 60; }
+  .ex-task {
+    position: relative; margin: 2px 0 4px; padding: 13px 18px 14px 22px; border-radius: 12px; overflow: hidden;
+    background: linear-gradient(120deg, rgba(var(--task-rgb), .13) 0%, rgba(var(--task-rgb), .04) 55%, rgba(96, 165, 250, .05) 100%);
+    border: 1px solid rgba(var(--task-rgb), .28);
+    box-shadow: 0 6px 22px -14px rgba(var(--task-rgb), .55), inset 0 1px 0 rgba(255, 255, 255, .04);
+  }
+  .ex-task::before {
+    content: ''; position: absolute; inset: 0 auto 0 0; width: 4px;
+    background: linear-gradient(180deg, var(--task-accent), rgba(var(--task-rgb), .35));
+    box-shadow: 0 0 14px rgba(var(--task-rgb), .6);
+  }
+  .ex-task-label {
+    display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px;
+    font: 700 10.5px 'Inter', sans-serif; letter-spacing: 1.2px; text-transform: uppercase; color: var(--task-accent);
+  }
+  .ex-task .ex-desc { color: #E8EDF7; font-size: 16px; line-height: 1.7; margin: 0; }
+  .ex-task .ex-desc code, .ex-hint code {
+    font-family: 'JetBrains Mono', monospace; font-size: .86em; padding: 2px 7px; border-radius: 6px;
+    color: #7DD3FC; background: rgba(8, 12, 22, .75); border: 1px solid rgba(125, 211, 252, .22); white-space: nowrap;
+  }
+  .ex-hint code { color: #BFDBFE; background: rgba(8, 12, 22, .55); border-color: rgba(147, 197, 253, .25); }
+  .ex-grid[data-size="large"] .ex-task { padding: 18px 24px 20px 28px; }
+  .ex-grid[data-size="large"] .ex-task .ex-desc { font-size: 18.5px; line-height: 1.8; }
+  .ex-grid[data-size="large"] .ex-task-label { font-size: 12px; margin-bottom: 8px; }
+
+  /* Exercise typography: deliberately generous so the cards are comfortable to read.
+     Declared last so it wins over the earlier per-element sizes (same specificity, later rule). */
+  .ex-grid .ex-card { padding: 18px 20px; }
+  .ex-grid .ex-num { font-size: 12px; min-width: 34px; }
+  .ex-grid .ex-title { font-size: 19px; line-height: 1.3; }
+  .ex-grid .ex-task-label { font-size: 12px; }
+  .ex-grid .ex-task .ex-desc { font-size: 18px; line-height: 1.7; }
+  .ex-grid .ex-badge { font-size: 12px; padding: 3px 10px; }
+  .ex-grid .ex-btn, .ex-grid .ex-close, .ex-grid .ex-hide-bar { font-size: 14px; padding: 8px 16px; }
+  .ex-grid .ex-hint { font-size: 15.5px; line-height: 1.7; padding: 11px 15px; }
+  .ex-grid .ex-hint code, .ex-grid .ex-task .ex-desc code { font-size: .88em; }
+  .ex-grid .ex-checks legend { font-size: 13px; }
+  .ex-grid .ex-checks label { font-size: 15.5px; }
+  .ex-grid .cb pre, .ex-grid .cb pre code { font-size: 15.5px; line-height: 1.75; }
+  .ex-grid .cb-head, .ex-grid .cb-head .copy-btn, .ex-grid .cb-head .lang { font-size: 13px; }
+
+  .ex-grid[data-size="large"] .ex-card { padding: 26px 30px; gap: 14px; }
+  .ex-grid[data-size="large"] .ex-num { font-size: 14px; min-width: 40px; }
+  .ex-grid[data-size="large"] .ex-title { font-size: 25px; }
+  .ex-grid[data-size="large"] .ex-task-label { font-size: 13.5px; }
+  .ex-grid[data-size="large"] .ex-task .ex-desc { font-size: 21px; line-height: 1.8; }
+  .ex-grid[data-size="large"] .ex-badge { font-size: 14px; padding: 4px 12px; }
+  .ex-grid[data-size="large"] .ex-btn, .ex-grid[data-size="large"] .ex-close, .ex-grid[data-size="large"] .ex-hide-bar { font-size: 16px; padding: 10px 20px; }
+  .ex-grid[data-size="large"] .ex-hint { font-size: 18px; padding: 14px 20px; }
+  .ex-grid[data-size="large"] .ex-checks legend { font-size: 14.5px; }
+  .ex-grid[data-size="large"] .ex-checks label { font-size: 18px; }
+  .ex-grid[data-size="large"] .cb pre, .ex-grid[data-size="large"] .cb pre code { font-size: 18.5px; line-height: 1.8; }
+  .ex-grid[data-size="large"] .cb-head, .ex-grid[data-size="large"] .cb-head .copy-btn, .ex-grid[data-size="large"] .cb-head .lang { font-size: 15px; }
 
   /* Keyboard focus must always be visible */
   .sec-head:focus-visible, .ex-btn:focus-visible, .ex-filter:focus-visible, .ex-close:focus-visible,

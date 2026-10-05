@@ -208,6 +208,18 @@ test.describe('exercises section', () => {
     await expect(page.locator('.ex-grid').first()).toHaveAttribute('data-size', 'normal');
   });
 
+  test('the task statement is a highlighted panel and `code` renders as code, not raw backticks', async ({ page }) => {
+    await openExercises(page);
+    const task = page.locator('#ej-b05 .ex-task');
+    await expect(task).toBeVisible();
+    await expect(task.locator('.ex-task-label')).toHaveText(/Enunciado/);
+    await expect(task.locator('.ex-desc code')).toHaveText(['https://playwright.dev', 'goBack()']);
+    await expect(task.locator('.ex-desc')).not.toContainText('`');
+    await page.locator('#ej-b05').getByRole('button', { name: /Mostrar pista/ }).click();
+    await expect(page.locator('#ej-b05 .ex-hint code').first()).toBeVisible();
+    await expect(page.locator('#ej-b05 .ex-hint')).not.toContainText('`');
+  });
+
   test('every card shows what it runs against', async ({ page }) => {
     await openExercises(page);
     await expect(page.locator('#ej-b01 .ex-badge-real')).toBeVisible();
